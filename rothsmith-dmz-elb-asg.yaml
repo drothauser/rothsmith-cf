@@ -7,9 +7,9 @@ Parameters:
   ELBSecurityGroups:
     Type: 'List<AWS::EC2::SecurityGroup::Id>'
     Description: The list of Security Groups used by your ELB
-  Ec2Subnet:
-    Type: AWS::EC2::Subnet::Id
-    Description: EC2 Instance Subnet
+  Ec2Subnets:
+    Type: 'List<AWS::EC2::Subnet::Id>'
+    Description: EC2 Instance Subnets
   Ec2SecurityGroups:
     Type: 'List<AWS::EC2::SecurityGroup::Id>'
     Description: Security Groups for EC2 instance 
@@ -37,18 +37,29 @@ Resources:
       Tags:
       - Key: Name
         Value: DMZ ELB
-  Ec2Instance:
-    Type: AWS::EC2::Instance
+  DmzLaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
       IamInstanceProfile: CloudWatch
       InstanceType: t2.micro
       ImageId: ami-0151f162d1ff20101
       KeyName: RothsmithKeyPair
-      SecurityGroupIds: !Ref Ec2SecurityGroups
-      SubnetId: subnet-09cd0870f808f2677
+      SecurityGroupIds: !Ref Ec2SecurityGroups      
       Tags:
         - Key: Name
           Value: DMZ Web Server
+  DmzASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      LaunchConfigurationName: !Ref DmzLaunchConfiguration
+      DesiredCapacity: '1'
+      LoadBalancerNames:
+      - Ref: DmzELB
+      MinSize: '1'
+      MaxSize: '1'
+      VPCZoneIdentifier: !Ref Ec2Subnets
+      HealthCheckType: "EC2"
+
 Outputs:
   URL:
     Description: URL of the sample website
