@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: DMZ ELB
+Parameters:
+  ELBSubnets:
+    Type: 'List<AWS::EC2::Subnet::Id>'
+    Description: The list of SubnetIds in your Virtual Private Cloud (VPC) for your ELB
+  ELBSecurityGroups:
+    Type: 'List<AWS::EC2::SecurityGroup::Id>'
+    Description: The list of Security Groups used by your ELB
+  Ec2Subnet:
+    Type: AWS::EC2::Subnet::Id
+    Description: EC2 Instance Subnet
+  Ec2SecurityGroups:
+    Type: 'List<AWS::EC2::SecurityGroup::Id>'
+    Description: Security Groups for EC2 instance 
+Resources:
+  DmzELB:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:      
+      #AvailabilityZones: ["us-east-1a"]
+      HealthCheck:
+        HealthyThreshold: '3'
+        Interval: '10'
+        Target: HTTP:80/
+        Timeout: '5'
+        UnhealthyThreshold: '5'
+      Instances: 
+      #- Ref: Instances
+      - Ref: Ec2Instance
+      Listeners:
+      - LoadBalancerPort: '80'
+        InstancePort: '80'
+        Protocol: HTTP
+      Scheme: internet-facing
+      SecurityGroups: !Ref ELBSecurityGroups
+      Subnets: !Ref ELBSubnets
+      Tags:
+      - Key: Name
+        Value: DMZ ELB
+  Ec2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      IamInstanceProfile: CloudWatch
+      InstanceType: t2.micro
+      ImageId: ami-0151f162d1ff20101
+      KeyName: RothsmithKeyPair
+      SecurityGroupIds: !Ref Ec2SecurityGroups
+      SubnetId: subnet-09cd0870f808f2677
+      Tags:
+        - Key: Name
+          Value: DMZ Web Server
+Outputs:
+  URL:
+    Description: URL of the sample website
+    Value: !Join ['', ['http://', !GetAtt [DmzELB, DNSName]]]
