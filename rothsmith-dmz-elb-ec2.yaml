@@ -17,7 +17,6 @@ Resources:
   DmzELB:
     Type: AWS::ElasticLoadBalancing::LoadBalancer
     Properties:      
-      #AvailabilityZones: ["us-east-1a"]
       HealthCheck:
         HealthyThreshold: '3'
         Interval: '10'
@@ -25,7 +24,6 @@ Resources:
         Timeout: '5'
         UnhealthyThreshold: '5'
       Instances: 
-      #- Ref: Instances
       - Ref: Ec2Instance
       Listeners:
       - LoadBalancerPort: '80'

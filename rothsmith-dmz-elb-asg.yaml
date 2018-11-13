@@ -13,6 +13,9 @@ Parameters:
   Ec2SecurityGroups:
     Type: 'List<AWS::EC2::SecurityGroup::Id>'
     Description: Security Groups for EC2 instance 
+  AmiId:
+    Type: String
+    Description: Amazon Machine Image ID
 Resources:
   DmzELB:
     Type: AWS::ElasticLoadBalancing::LoadBalancer
@@ -24,9 +27,6 @@ Resources:
         Target: HTTP:80/
         Timeout: '5'
         UnhealthyThreshold: '5'
-      Instances: 
-      #- Ref: Instances
-      - Ref: Ec2Instance
       Listeners:
       - LoadBalancerPort: '80'
         InstancePort: '80'
@@ -42,23 +42,30 @@ Resources:
     Properties:
       IamInstanceProfile: CloudWatch
       InstanceType: t2.micro
-      ImageId: ami-0151f162d1ff20101
+      ImageId: !Ref AmiId
       KeyName: RothsmithKeyPair
-      SecurityGroupIds: !Ref Ec2SecurityGroups      
-      Tags:
-        - Key: Name
-          Value: DMZ Web Server
+      SecurityGroups: !Ref Ec2SecurityGroups
+      UserData:
+        "Fn::Base64":
+          !Sub |
+            #!/bin/bash -xe
+            yum update -y httpd
   DmzASG:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       LaunchConfigurationName: !Ref DmzLaunchConfiguration
       DesiredCapacity: '1'
+      HealthCheckGracePeriod: 300
       LoadBalancerNames:
       - Ref: DmzELB
       MinSize: '1'
       MaxSize: '1'
       VPCZoneIdentifier: !Ref Ec2Subnets
-      HealthCheckType: "EC2"
+      HealthCheckType: "ELB"
+      Tags:
+        - Key: Name
+          Value: DMZ AutoScaling Group
+          PropagateAtLaunch: "true"
 
 Outputs:
   URL:

@@ -1,1 +1,1 @@
-aws cloudformation delete-stack --stack-name myteststack
+aws cloudformation delete-stack --stack-name DMZAppStack
