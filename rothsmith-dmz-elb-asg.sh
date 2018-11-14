@@ -1,7 +1,15 @@
-    # ParameterKey=ELBSubnets,ParameterValue=\"subnet-09cd0870f808f2677\\,subnet-0386c83240089af69\" \
+#!/bin/bash
+if [ $# -eq 0 ]
+  then
+    echo "You must supply a stack name argument!"
+    exit 1
+fi
+
+# ParameterKey=ELBSubnets,ParameterValue=\"subnet-09cd0870f808f2677\\,subnet-0386c83240089af69\" \
+
 aws cloudformation create-stack\
  --debug\
- --stack-name DMZAppStack\
+ --stack-name $1\
  --template-body file://rothsmith-dmz-elb-asg.yaml\
  --parameters\
     ParameterKey=AmiId,ParameterValue=ami-0151f162d1ff20101\

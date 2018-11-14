@@ -1,7 +1,7 @@
-    REM ParameterKey=ELBSubnets,ParameterValue=^"subnet-09cd0870f808f2677^\,subnet-0386c83240089af69^" ^
+REM ParameterKey=ELBSubnets,ParameterValue=^"subnet-09cd0870f808f2677^\,subnet-0386c83240089af69^" ^
 aws cloudformation create-stack^
  --debug^
- --stack-name myteststack^
+ --stack-name %1^
  --template-body file://rothsmith-dmz-elb.yaml^
  --parameters^
     ParameterKey=ELBSubnets,ParameterValue=^"subnet-09cd0870f808f2677^" ^
