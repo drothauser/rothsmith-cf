@@ -16,14 +16,23 @@ Parameters:
   EC2KeyPair: 
     Type: String
     Description: Provides the name of the Amazon EC2 key pair
+  EC2Profile: 
+    Type: String
+    Default: DevOps
+    Description: The profile/role for this EC2 instance
 Resources:
   Ec2Instance:
     Type: AWS::EC2::Instance
     Properties:
-      IamInstanceProfile: CloudWatch
+      IamInstanceProfile: !Ref EC2Profile
       InstanceType: t2.micro
       ImageId: !Ref AmiId
       KeyName: !Ref EC2KeyPair
+      #NetworkInterfaces: 
+      #  - AssociatePublicIpAddress: "true"
+      #    DeviceIndex: "0"
+      #    GroupSet: !Ref Ec2SecurityGroups
+      #    SubnetId: !Ref Ec2Subnet
       SecurityGroupIds: !Ref Ec2SecurityGroups
       SubnetId: !Ref Ec2Subnet
       Tags:
@@ -34,6 +43,9 @@ Resources:
           !Sub |
           <powershell>
           ### Set Variable ###
+
+          $NCCT_Software_Bucket = "ncct-software";
+          $AWSCLI_Key = "AWSCLI64PY3.msi"
 
           $CIS_Directory = "c:\cis";
           $Software_Directory = "c:\cis\EC2-Software";
@@ -47,12 +59,26 @@ Resources:
 
           function Invoke-Functions
           {
+              Install-CLI
               Copy-File
               Install-Mcafee
               Install-SplunkUF
               Install-Nexpose
               set-Registry
               clean-up
+          }
+
+          function Install-CLI
+          {
+              read-s3object `
+                  -BucketName $NCCT_Software_Bucket `
+                  -Key $AWSCLI_Key `
+                  -File $CIS_Directory\$AWSCLI_Key `
+                  -Region $SetRegion
+
+              start-process $CIS_Directory\$AWSCLI_Key /qn -Wait
+              setx PATH "$\{env:Path\};C:\PROGRA~1\Amazon\AWSCLI\bin"
+              
           }
 
           function Copy-File
