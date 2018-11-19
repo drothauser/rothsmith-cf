@@ -12,7 +12,7 @@ Parameters:
     Description: EC2 Instance Subnet
   Ec2SecurityGroups:
     Type: 'List<AWS::EC2::SecurityGroup::Id>'
-    Description: Security Groups for EC2 instance 
+    Description: Security Groups for EC2 instance
 Resources:
   DmzELB:
     Type: AWS::ElasticLoadBalancing::LoadBalancer

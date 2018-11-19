@@ -47,10 +47,10 @@ function Install-SplunkUF
 
 function Install-Nexpose
 {
-    set-location $SetLocation_Nexpose
-    #expand-archive 'nexpose_agent_windows.zip' -DestinationPath .\ 
-    start-process -filepath "msiexec.exe" -ArgumentList "/i agentInstaller-x86_64.msi /quiet /qn " -Wait
-
+Set-Location
+Set-Location
+Set-Locationuiet /qn " -Wait
+Set-Location
 }
 
 function set-Registry
