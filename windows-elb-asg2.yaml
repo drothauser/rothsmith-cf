@@ -68,19 +68,19 @@ Resources:
 
              read-s3object `
                -BucketName $NCCT_Template_Bucket `
-               -Key $NCCT_Scripts_Dir/userdata-powershell-gov-ec2.txt `
-               -File caciuserdata.ps1 `
+               -Key $NCCT_Scripts_Dir/userdata-powershell-gov-ec2.ps1 `
+               -File $env:Temp\caciuserdata.ps1 `
                -Region $SetRegion
 
-             .\caciuserdata.ps1
+             & $env:Temp\caciuserdata.ps1
 
               read-s3object `
                -BucketName $NCCT_Template_Bucket `
-               -Key $NCCT_Scripts_Dir/cli-install.txt `
-               -File cli-install.ps1 `
+               -Key $NCCT_Scripts_Dir/cli-install.ps1 `
+               -File $env:Temp\cli-install.ps1 `
                -Region $SetRegion
                
-             .\cli-install.ps1
+             & $env:Temp\cli-install.ps1
 
           </powershell>
   DmzASG:
