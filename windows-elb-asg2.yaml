@@ -28,6 +28,10 @@ Parameters:
     Type: String
     Default: DevOps
     Description: The profile/role for this EC2 instance
+  EC2Script:
+    Type: String
+    Default: "Touchpoints.ps1"
+    Description: Server initialization Powershell script for UserData
 Resources:
   DmzELB:
     Type: AWS::ElasticLoadBalancing::LoadBalancer
@@ -66,7 +70,7 @@ Resources:
               $NCCT_Scripts_Dir = "UserdataScripts";
               $SetRegion = "us-gov-west-1";
 
-             read-s3object `
+             Read-S3Object `
                -BucketName $NCCT_Template_Bucket `
                -Key $NCCT_Scripts_Dir/userdata-powershell-gov-ec2.ps1 `
                -File $env:Temp\caciuserdata.ps1 `
@@ -74,13 +78,21 @@ Resources:
 
              & $env:Temp\caciuserdata.ps1
 
-              read-s3object `
+              Read-S3Object `
                -BucketName $NCCT_Template_Bucket `
                -Key $NCCT_Scripts_Dir/cli-install.ps1 `
                -File $env:Temp\cli-install.ps1 `
                -Region $SetRegion
                
              & $env:Temp\cli-install.ps1
+
+              Read-S3Object `
+              -BucketName $NCCT_Template_Bucket `
+              -Key $NCCT_Scripts_Dir/${EC2Script} `
+              -File $env:Temp\${EC2Script} `
+              -Region $SetRegion
+              
+            & $env:Temp\${EC2Script} $env:Temp\foo.txt
 
           </powershell>
   DmzASG:
