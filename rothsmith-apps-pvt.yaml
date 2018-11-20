@@ -1,29 +1,33 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: DMZ ELB
 Parameters:
-  ElbSNs:
+  PubElbSNs:
     Type: 'List<AWS::EC2::Subnet::Id>'
     Description: The list of SubnetIds in your Virtual Private Cloud (VPC) for your ELB
-  ElbSGs:
+  PubElbSGs:
     Type: 'List<AWS::EC2::SecurityGroup::Id>'
     Description: The list of Security Groups used by your ELB
-  Ec2SNs:
+  PubEc2SNs:
     Type: 'List<AWS::EC2::Subnet::Id>'
     Description: EC2 Instance Subnets
-  Ec2SGs:
+  PubEc2SGs:
     Type: 'List<AWS::EC2::SecurityGroup::Id>'
     Description: Security Groups for EC2 instance 
   AmiId:
     Type: String
     Description: Amazon Machine Image ID
-  Ec2Role:
-    Type: String
-    Description: The EC2 Role/Profile name
-  Ec2Type:
-    Type: String
-    Description: The EC2 Instance Type
+Mappings:
+  TierMap: 
+    public: 
+      ami: "ami-0151f162d1ff20101"
+      role: "CloudWatch"
+      type: "t2.micro"
+    private: 
+      ami: "ami-07c8b576e965e389e"
+      role: "CloudWatch"
+      type: "t2.micro"
 Resources:
-  LoadBalancer:
+  DmzELB:
     Type: AWS::ElasticLoadBalancing::LoadBalancer
     Properties:      
       HealthCheck:
@@ -37,35 +41,44 @@ Resources:
         InstancePort: '80'
         Protocol: HTTP
       Scheme: internet-facing
-      SecurityGroups: !Ref ElbSGs
-      Subnets: !Ref ElbSNs
+      SecurityGroups: !Ref PubElbSGs
+      Subnets: !Ref PubElbSNs
       Tags:
       - Key: Name
-        Value: My Load Balancer
-  LaunchConfiguration:
+        Value: DMZ ELB
+  DmzLaunchConfiguration:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
-      IamInstanceProfile: !Ref Ec2Role
-      InstanceType: !Ref Ec2Type
-      ImageId: !Ref AmiId
+      IamInstanceProfile: !FindInMap
+        - TierMap
+        - public
+        - role 
+      InstanceType: !FindInMap
+        - TierMap
+        - public
+        - type 
+      ImageId: !FindInMap
+        - TierMap
+        - public
+        - ami 
       KeyName: RothsmithKeyPair
-      SecurityGroups: !Ref Ec2SGs
+      SecurityGroups: !Ref PubEc2SGs
       UserData:
         "Fn::Base64":
           !Sub |
             #!/bin/bash -xe
             yum update -y httpd
-  AutoScalingGroup:
+  DmzASG:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      LaunchConfigurationName: !Ref LaunchConfiguration
+      LaunchConfigurationName: !Ref DmzLaunchConfiguration
       DesiredCapacity: '1'
       HealthCheckGracePeriod: 300
       LoadBalancerNames:
-      - Ref: LoadBalancer
+      - Ref: DmzELB
       MinSize: '1'
       MaxSize: '1'
-      VPCZoneIdentifier: !Ref Ec2SNs
+      VPCZoneIdentifier: !Ref PubEc2SNs
       HealthCheckType: "ELB"
       Tags:
         - Key: Name
@@ -75,4 +88,4 @@ Resources:
 Outputs:
   URL:
     Description: URL of the sample website
-    Value: !Join ['', ['http://', !GetAtt [LoadBalancer, DNSName]]]
+    Value: !Join ['', ['http://', !GetAtt [DmzELB, DNSName]]]

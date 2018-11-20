@@ -27,65 +27,7 @@ Mappings:
       role: "CloudWatch"
       type: "t2.micro"
 Resources:
-  DmzELB:
-    Type: AWS::ElasticLoadBalancing::LoadBalancer
-    Properties:      
-      HealthCheck:
-        HealthyThreshold: '3'
-        Interval: '10'
-        Target: HTTP:80/
-        Timeout: '5'
-        UnhealthyThreshold: '5'
-      Listeners:
-      - LoadBalancerPort: '80'
-        InstancePort: '80'
-        Protocol: HTTP
-      Scheme: internet-facing
-      SecurityGroups: !Ref PubElbSGs
-      Subnets: !Ref PubElbSNs
-      Tags:
-      - Key: Name
-        Value: DMZ ELB
-  DmzLaunchConfiguration:
-    Type: AWS::AutoScaling::LaunchConfiguration
+  PublicTier:
+    Type: AWS::CloudFormation::Stack
     Properties:
-      IamInstanceProfile: !FindInMap
-        - TierMap
-        - public
-        - role 
-      InstanceType: !FindInMap
-        - TierMap
-        - public
-        - type 
-      ImageId: !FindInMap
-        - TierMap
-        - public
-        - ami 
-      KeyName: RothsmithKeyPair
-      SecurityGroups: !Ref PubEc2SGs
-      UserData:
-        "Fn::Base64":
-          !Sub |
-            #!/bin/bash -xe
-            yum update -y httpd
-  DmzASG:
-    Type: AWS::AutoScaling::AutoScalingGroup
-    Properties:
-      LaunchConfigurationName: !Ref DmzLaunchConfiguration
-      DesiredCapacity: '1'
-      HealthCheckGracePeriod: 300
-      LoadBalancerNames:
-      - Ref: DmzELB
-      MinSize: '1'
-      MaxSize: '1'
-      VPCZoneIdentifier: !Ref PubEc2SNs
-      HealthCheckType: "ELB"
-      Tags:
-        - Key: Name
-          Value: DMZ AutoScaling Group
-          PropagateAtLaunch: "true"
-
-Outputs:
-  URL:
-    Description: URL of the sample website
-    Value: !Join ['', ['http://', !GetAtt [DmzELB, DNSName]]]
+      TemplateURL:
