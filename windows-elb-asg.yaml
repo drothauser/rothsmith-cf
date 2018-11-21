@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: DMZ ELB
+Description: Standup Windows instance with ELB and ASG
 Parameters:
   ELBSubnets:
     Type: 'List<AWS::EC2::Subnet::Id>'

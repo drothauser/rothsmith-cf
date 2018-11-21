@@ -1,6 +1,5 @@
 function Install-CLI
 {
-
     $NCCT_Software_Bucket = "ncct-software";
     $AWSCLI_Installer_File = "AWSCLI64PY3.msi"
     $CIS_Directory = "c:\cis";

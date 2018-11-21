@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: DMZ ELB
+Description: Standup Windows instance with ELB and ASG
 Parameters:
   ELBSubnets:
     Type: 'List<AWS::EC2::Subnet::Id>'
@@ -80,7 +80,7 @@ Resources:
 
               Read-S3Object `
                -BucketName $NCCT_Template_Bucket `
-               -Key $NCCT_Scripts_Dir/cli-install.ps1 `
+               -Key $NCCT_Scripts_Dir/cli-install.ps1 `Read-S3Object `
                -File $env:Temp\cli-install.ps1 `
                -Region $SetRegion
                
@@ -88,7 +88,7 @@ Resources:
 
               Read-S3Object `
               -BucketName $NCCT_Template_Bucket `
-              -Key $NCCT_Scripts_Dir/${EC2Script} `
+              -Key $NCCT_Scripts_Dir/${EC2Script} `Ec2SecurityGroups
               -File $env:Temp\${EC2Script} `
               -Region $SetRegion
               
