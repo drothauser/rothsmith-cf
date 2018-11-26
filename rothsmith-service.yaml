@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: DMZ ELB
+Parameters:
+  ElbSNs:
+    Type: 'List<AWS::EC2::Subnet::Id>'
+    Description: The list of SubnetIds in your Virtual Private Cloud (VPC) for your ELB
+  ElbSGs:
+    Type: 'List<AWS::EC2::SecurityGroup::Id>'
+    Description: The list of Security Groups used by your ELB
+  Ec2SNs:
+    Type: 'List<AWS::EC2::Subnet::Id>'
+    Description: EC2 Instance Subnets
+  Ec2SGs:
+    Type: 'List<AWS::EC2::SecurityGroup::Id>'
+    Description: Security Groups for EC2 instance 
+  AmiId:
+    Type: String
+    Description: Amazon Machine Image ID
+  Ec2Role:
+    Type: String
+    Description: The EC2 Role/Profile name
+  Ec2Type:
+    Type: String
+    Description: The EC2 Instance Type
+  Facing:
+    Type: String
+    Default: public
+    AllowedValues:
+      - public
+      - private
+    Description: Will this service be public facing or in a private network layer
+Mappings:
+  LayerMap:
+    public:
+      scheme: internet-facing
+    private:
+      scheme: internal
+Resources:
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:      
+      HealthCheck:
+        HealthyThreshold: '3'
+        Interval: '10'
+        Target: HTTP:80/
+        Timeout: '5'
+        UnhealthyThreshold: '5'
+      Listeners:
+      - LoadBalancerPort: '80'
+        InstancePort: '80'
+        Protocol: HTTP
+      Scheme: !FindInMap
+        - LayerMap
+        - !Ref Facing
+        - scheme
+      SecurityGroups: !Ref ElbSGs
+      Subnets: !Ref ElbSNs
+      Tags:
+      - Key: Name
+        Value: My Load Balancer
+  LaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      IamInstanceProfile: !Ref Ec2Role
+      InstanceType: !Ref Ec2Type
+      ImageId: !Ref AmiId
+      KeyName: RothsmithKeyPair
+      SecurityGroups: !Ref Ec2SGs
+      UserData:
+        "Fn::Base64":
+          !Sub |
+            #!/bin/bash -xe
+            yum update -y httpd
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      LaunchConfigurationName: !Ref LaunchConfiguration
+      DesiredCapacity: '1'
+      HealthCheckGracePeriod: 300
+      LoadBalancerNames:
+      - Ref: LoadBalancer
+      MinSize: '1'
+      MaxSize: '1'
+      VPCZoneIdentifier: !Ref Ec2SNs
+      HealthCheckType: "ELB"
+      Tags:
+        - Key: Name
+          Value: DMZ AutoScaling Group
+          PropagateAtLaunch: "true"
+
+Outputs:
+  URL:
+    Description: URL of the sample website
+    Value: !Join ['', ['http://', !GetAtt [LoadBalancer, DNSName]]]

@@ -16,6 +16,18 @@ Parameters:
   AmiId:
     Type: String
     Description: Amazon Machine Image ID
+  Ec2Role:
+    Type: String
+    Default: CloudWatch
+    Description: The EC2 Role/Profile name
+  Ec2Type:
+    Type: String
+    Default: t2.micro
+    Description: The EC2 Instance Type
+  S3Bucket:
+    Type: String
+    Default: rothsmith-cloudformation
+    Description: The S3 bucket containing CloudFormation templates
 Mappings:
   TierMap: 
     public: 
@@ -30,4 +42,17 @@ Resources:
   PublicTier:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.amazonaws.com/'
+          - !Ref S3Bucket
+          - '/rothsmith-service.yaml'
+      Parameters:
+        ElbSNs: !Join [ ",", !Ref PubElbSNs]
+        ElbSGs: !Join [ ",", !Ref PubElbSGs]
+        Ec2SNs: !Join [ ",", !Ref PubEc2SNs]
+        Ec2SGs: !Join [ ",", !Ref PubEc2SGs]
+        AmiId: !Ref AmiId
+        Ec2Role: !Ref Ec2Role
+        Ec2Type: !Ref Ec2Type
+        
