@@ -12,10 +12,7 @@ aws cloudformation create-stack\
  --stack-name $1\
  --template-body file://rothsmith-apps.yaml\
  --parameters\
-    ParameterKey=AmiId,ParameterValue=ami-0151f162d1ff20101\
     ParameterKey=PubElbSNs,ParameterValue=\"subnet-09cd0870f808f2677\" \
     ParameterKey=PubElbSGs,ParameterValue=\"sg-07748e0a19e936ae4\" \
     ParameterKey=PubEc2SNs,ParameterValue=subnet-09cd0870f808f2677\
-    ParameterKey=PubEc2SGs,ParameterValue=sg-07748e0a19e936ae4\
-    ParameterKey=Ec2Role,ParameterValue=CloudWatch\
-    ParameterKey=Ec2Type,ParameterValue=t2.micro
+    ParameterKey=PubEc2SGs,ParameterValue=sg-07748e0a19e936ae4

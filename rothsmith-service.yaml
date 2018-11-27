@@ -22,6 +22,18 @@ Parameters:
   Ec2Type:
     Type: String
     Description: The EC2 Instance Type
+  Ec2Name:
+    Type: String
+    Description: Tag name for the EC2 instance    
+  Ec2Owner:
+    Type: String    
+    Description: The administrator of this instance's email address
+  Ec2Desc:
+    Type: String
+    Description: EC2 instance's description
+  Scaling:
+    Type: CommaDelimitedList
+    Description: Scaling dimensions of the Autoscaling Group - min, max, desired
   Facing:
     Type: String
     Default: public
@@ -57,7 +69,7 @@ Resources:
       Subnets: !Ref ElbSNs
       Tags:
       - Key: Name
-        Value: My Load Balancer
+        Value: !Ref Ec2Name
   LaunchConfiguration:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
@@ -75,19 +87,24 @@ Resources:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       LaunchConfigurationName: !Ref LaunchConfiguration
-      DesiredCapacity: '1'
+      DesiredCapacity: !Select [ "2", !Ref Scaling ]
       HealthCheckGracePeriod: 300
       LoadBalancerNames:
       - Ref: LoadBalancer
-      MinSize: '1'
-      MaxSize: '1'
+      MinSize: !Select [ "0", !Ref Scaling ]
+      MaxSize: !Select [ "1", !Ref Scaling ]
       VPCZoneIdentifier: !Ref Ec2SNs
       HealthCheckType: "ELB"
       Tags:
         - Key: Name
-          Value: DMZ AutoScaling Group
+          Value: !Ref Ec2Name
           PropagateAtLaunch: "true"
-
+        - Key: Owner
+          Value: !Ref Ec2Owner
+          PropagateAtLaunch: "true"
+        - Key: Description
+          Value: !Ref Ec2Desc
+          PropagateAtLaunch: "true"
 Outputs:
   URL:
     Description: URL of the sample website

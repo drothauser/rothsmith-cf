@@ -15,15 +15,15 @@ Parameters:
     Description: Security Groups for EC2 instance 
   AmiId:
     Type: String
-    Description: Amazon Machine Image ID
+    DescriptionEc2Name
   Ec2Role:
-    Type: String
-    Description: The EC2 Role/Profile name
+    Type: StrinEc2Name
+    DescriptionEc2Name
   Ec2Type:
-    Type: String
-    Description: The EC2 Instance Type
+    Type: StrinEc2Name
+    DescriptionEc2Name
 Resources:
-  LoadBalancer:
+  LoadBalancer:Ec2Name
     Type: AWS::ElasticLoadBalancing::LoadBalancer
     Properties:      
       HealthCheck:

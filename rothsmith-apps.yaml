@@ -13,17 +13,6 @@ Parameters:
   PubEc2SGs:
     Type: 'List<AWS::EC2::SecurityGroup::Id>'
     Description: Security Groups for EC2 instance 
-  AmiId:
-    Type: String
-    Description: Amazon Machine Image ID
-  Ec2Role:
-    Type: String
-    Default: CloudWatch
-    Description: The EC2 Role/Profile name
-  Ec2Type:
-    Type: String
-    Default: t2.micro
-    Description: The EC2 Instance Type
   S3Bucket:
     Type: String
     Default: rothsmith-cloudformation
@@ -33,11 +22,19 @@ Mappings:
     public: 
       ami: "ami-0151f162d1ff20101"
       role: "CloudWatch"
+      scaling: "1,1,1"
       type: "t2.micro"
+      name: DMZ server
+      owner: drothauser@yahoo.com
+      description: DMZ Apache Web Server
     private: 
       ami: "ami-07c8b576e965e389e"
       role: "CloudWatch"
+      scaling: "1,1,1"
       type: "t2.micro"
+      name: Application server
+      owner: drothauser@yahoo.com
+      description: Tomcat Server
 Resources:
   PublicTier:
     Type: AWS::CloudFormation::Stack
@@ -52,7 +49,38 @@ Resources:
         ElbSGs: !Join [ ",", !Ref PubElbSGs]
         Ec2SNs: !Join [ ",", !Ref PubEc2SNs]
         Ec2SGs: !Join [ ",", !Ref PubEc2SGs]
-        AmiId: !Ref AmiId
-        Ec2Role: !Ref Ec2Role
-        Ec2Type: !Ref Ec2Type
+        AmiId: !FindInMap
+        - TierMap
+        - public
+        - ami
+        AmiId: !FindInMap
+        - TierMap
+        - public
+        - ami
+        Ec2Role: !FindInMap
+        - TierMap
+        - public
+        - role
+        Ec2Type: !FindInMap
+        - TierMap
+        - public
+        - type
+        Ec2Name: !FindInMap
+        - TierMap
+        - public
+        - name
+        Ec2Owner: !FindInMap
+        - TierMap
+        - public
+        - owner
+        Ec2Desc: !FindInMap
+        - TierMap
+        - public
+        - description
+        Facing: public
+        Scaling: !FindInMap
+        - TierMap
+        - public
+        - scaling
+
         

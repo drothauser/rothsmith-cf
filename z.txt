@@ -1,2 +1,0 @@
-https://s3.amazonaws.com/rothsmith-cloudformation/rothsmith-apps.pub.yaml
-https://s3.amazonaws.com/rothsmith-cloudformation/rothsmith-apps-pub.yaml
