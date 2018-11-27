@@ -22,8 +22,13 @@ Parameters:
     Description: The profile/role for this EC2 instance
   Ec2Name:
     Type: String
-    Default: "My EC2 Instance"
-    Description: Value of Name tag
+    Description: Name of the EC2 instance
+  Ec2Owner:
+    Type: String
+    Description: Email address of the person owning this EC2 instance
+  Ec2Desc:
+    Type: String
+    Description: Description of this EC2 instance  
 Resources:
   Ec2Instance:
     Type: AWS::EC2::Instance
@@ -32,7 +37,7 @@ Resources:
         -
           DeviceName: "/dev/sda1"
           Ebs:
-            VolumeSize: 60
+            VolumeSize: 80
             VolumeType: gp2
       IamInstanceProfile: !Ref Ec2Profile
       InstanceType: m4.xlarge
@@ -43,6 +48,10 @@ Resources:
       Tags:
         - Key: Name
           Value: !Ref Ec2Name
+        - Key: Owner
+          Value: !Ref Ec2Owner
+        - Key: Description
+          Value: !Ref Ec2Desc
       UserData:
         "Fn::Base64":
           !Sub |
