@@ -1,6 +1,9 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: DMZ ELB
+Description: NCCT service resource including load balancer, autoscaling resources
 Parameters:
+  ConfigFile:
+    Type: String
+    Description: Configuration XML file used by ncctconfig.ps1
   ElbSNs:
     Type: 'List<AWS::EC2::Subnet::Id>'
     Description: The list of SubnetIds in your Virtual Private Cloud (VPC) for your ELB
@@ -31,9 +34,24 @@ Parameters:
   Ec2Desc:
     Type: String
     Description: EC2 instance's description
+  Ec2KeyPair: 
+    Type: String
+    Description: Provides the name of the Amazon EC2 key pair
   Scaling:
     Type: CommaDelimitedList
     Description: Scaling dimensions of the Autoscaling Group - min, max, desired
+  Protocol:
+    Type: String
+    Default: HTTP
+    Description: Protocol used by the load balancer and EC2 instance
+  ElbPort:
+    Type: String
+    Default: '80'
+    Description: TCP port that the load balancer listens on for incoming traffic
+  Ec2Port:
+    Type: String
+    Default: '80'
+    Description: TCP port that the application deployed on the EC2 instance listens on
   Facing:
     Type: String
     Default: public
@@ -41,6 +59,8 @@ Parameters:
       - public
       - private
     Description: Will this service be public facing or in a private network layer
+Conditions: 
+  ProtocolHTTP: !Equals [!Ref Protocol, "HTTP"]
 Mappings:
   LayerMap:
     public:
@@ -54,13 +74,14 @@ Resources:
       HealthCheck:
         HealthyThreshold: '3'
         Interval: '10'
-        Target: HTTP:80/
+        Target: !Join ["", [!Ref Protocol, ":", !Ref Ec2Port, !If [ProtocolHTTP, "/", ""]]]
+        #Target: !Join ["", [!Ref Protocol, ":", !Ref Ec2Port]]
         Timeout: '5'
         UnhealthyThreshold: '5'
       Listeners:
-      - LoadBalancerPort: '80'
-        InstancePort: '80'
-        Protocol: HTTP
+      - LoadBalancerPort: !Ref ElbPort
+        InstancePort: !Ref Ec2Port
+        Protocol: !Ref Protocol
       Scheme: !FindInMap
         - LayerMap
         - !Ref Facing
@@ -76,13 +97,32 @@ Resources:
       IamInstanceProfile: !Ref Ec2Role
       InstanceType: !Ref Ec2Type
       ImageId: !Ref AmiId
-      KeyName: RothsmithKeyPair
+      KeyName: !Ref Ec2KeyPair
       SecurityGroups: !Ref Ec2SGs
       UserData:
         "Fn::Base64":
           !Sub |
-            #!/bin/bash -xe
-            yum update -y httpd
+          <powershell>
+
+            $NCCT_Template_Bucket = "ncct-cloudformation-templates";
+            $NCCT_Scripts_Dir = "UserdataScripts";
+            $Region = "us-gov-west-1";
+            $Script = "NcctConfig.ps1"
+
+            Function LaunchConfigScript ([string]$ConfigFile)
+            {
+              Read-S3Object `
+                -BucketName $NCCT_Template_Bucket `
+                -Key $NCCT_Scripts_Dir/$Script `
+                -File $env:Temp\$Script `
+                -Region $Region
+              & $env:Temp\$Script ${ConfigFile}
+            }
+
+            # LaunchConfigScript ${ConfigFile}
+            Write-Host "LaunchConfigScript ${ConfigFile}"
+
+          </powershell>
   AutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:

@@ -52,7 +52,7 @@ Resources:
       Subnets: !Ref ELBSubnets
       Tags:
       - Key: Name
-        Value: DMZ ELB
+        Value: "Load Balancer"
   DmzLaunchConfiguration:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
