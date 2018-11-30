@@ -1,0 +1,96 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: NCCT Base Load Balancers
+Parameters:
+  S3Bucket:
+    Type: String
+    Default: ncct-cloudformation-templates
+    Description: The S3 bucket containing CloudFormation templates
+Mappings:
+  SubnetMap:
+    External:
+      subnets: ["subnet-cf6fbdb9", "subnet-2e2ef44a"]
+      secgroups: ["sg-49a1fb2d", "sg-49a1fb2d"]
+    Internal:
+      subnets: ["subnet-04984572", "subnet-1128f275"]
+      secgroups: ["sg-43db8127", "sg-49a1fb2d"]
+    Maintenance:
+      subnets: ["subnet-7da2f819", "subnet-1828f27c"]
+      secgroups: ["sg-56a1fb32", "sg-49a1fb2d"]
+    Management:
+      subnets: ["subnet-c26fbdb4", "subnet-9c37edf8"]
+      secgroups: ["sg-7da2f819", "sg-49a1fb2d"]
+    Simulator:
+      subnets: ["subnet-d368baa5", "subnet-d368baa5"]
+      secgroups: ["sg-77aff513", "sg-49a1fb2d"]
+  NcctMap: 
+    DMS:
+      name: DMS
+      owner: ncct-developer@caci.com
+      description: Binary Adapter Server
+      protocol: TCP
+      elbPort: '3389'
+      ec2Port: '3389'
+#   DB: 
+#     name: DB
+#     owner: ncct-developer@caci.com
+#     description: BSIM Server
+#     protocol: TCP
+#     elbPort: '3389'
+#     ec2Port: '3389'
+#     subnets: !FindInMap [SubnetMap, Management, subnets] 
+#     secgroups: !FindInMap [SubnetMap, Management, secgroups] 
+#   INMB:
+#     name: INDB
+#     owner: ncct-developer@caci.com
+#     description: BSIM Server
+#     protocol: TCP
+#     elbPort: '3389'
+#     ec2Port: '3389'
+#     subnets: !FindInMap [SubnetMap, Internal, subnets] 
+#     secgroups: !FindInMap [SubnetMap, Internal, secgroups] 
+#   ENMB:
+#     name: ENMB
+#     owner: ncct-developer@caci.com
+#     description: BSIM Server
+#     protocol: TCP
+#     elbPort: '3389'
+#     ec2Port: '3389'
+#     subnets: !FindInMap [SubnetMap, External, subnets] 
+#     secgroups: !FindInMap [SubnetMap, External, secgroups] 
+#   EXMB:
+#     name: EXMB
+#     owner: ncct-developer@caci.com
+#     description: BSIM Server
+#     protocol: TCP
+#     elbPort: '3389'
+#     ec2Port: '3389'
+#     subnets: !FindInMap [SubnetMap, External, subnets] 
+#     secgroups: !FindInMap [SubnetMap, External, secgroups] 
+#   SMS: 
+#     name: SMS
+#     owner: ncct-developer@caci.com
+#     description: BSIM Server
+#     protocol: TCP
+#     elbPort: '3389'
+#     ec2Port: '3389'
+#     subnets: !FindInMap [SubnetMap, Maintenance, subnets] 
+#     secgroups: !FindInMap [SubnetMap, Maintenance, secgroups] 
+Resources:
+  DMSLoadBalancer:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - '/ncct-elb.yaml'
+      Parameters:
+        ElbSNs: !Join ["," , [!FindInMap [SubnetMap, Management, subnets]]]
+        ElbSGs: !Join ["," , [!FindInMap [SubnetMap, Management, secgroups]]]
+        Facing: private
+        Name: !FindInMap [NcctMap, DMS, name]
+        Owner: !FindInMap [NcctMap, DMS, owner]
+        Desc: !FindInMap [NcctMap, DMS, description]
+        ElbPort: !FindInMap [NcctMap, DMS, elbPort]
+        Ec2Port: !FindInMap [NcctMap, DMS, ec2Port]
+        Protocol: !FindInMap [NcctMap, DMS, protocol]
