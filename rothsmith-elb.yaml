@@ -28,8 +28,21 @@ Parameters:
     Type: String
     Default: '80'
     Description: TCP port that managed EC2 instances listens on
+  Facing:
+    Type: String
+    Default: public
+    AllowedValues:
+      - public
+      - private
+    Description: Will this service be public facing or in a private network layer
 Conditions: 
   ProtocolHTTP: !Equals [!Ref Protocol, "HTTP"]
+Mappings:
+  LayerMap:
+    public:
+      scheme: internet-facing
+    private:
+      scheme: internal
 Resources:
   LoadBalancer:
     Type: AWS::ElasticLoadBalancing::LoadBalancer
@@ -44,7 +57,10 @@ Resources:
       - LoadBalancerPort: !Ref ElbPort
         InstancePort: !Ref Ec2Port
         Protocol: !Ref Protocol
-      Scheme: internal
+      Scheme: !FindInMap
+        - LayerMap
+        - !Ref Facing
+        - scheme
       SecurityGroups: !Ref ElbSGs
       Subnets: !Ref ElbSNs
       Tags:
@@ -55,9 +71,6 @@ Resources:
       - Key: Description
         Value: !Ref Desc
 Outputs:
-  #NcctELB:
-  #  Description: Load Balancer Resource
-  #  Value: LoadBalancer
-  ElbDnsName:
-    Description: DNS Name for Elastic Load Balancer
-    Value: !GetAtt LoadBalancer.DNSName
+  NcctELB:
+    Description: Load Balancer Resource
+    Value: LoadBalancer
