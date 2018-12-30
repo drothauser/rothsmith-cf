@@ -218,6 +218,8 @@ Outputs:
   VPCId:
     Description: VPCId of the newly created VPC
     Value: !Ref 'VPC'
+    Export:
+      Name: !Sub "${AWS::StackName}-VPCID"
   NatGateway:
     Description: NAT gateway instance
     Value: !Ref 'NAT'
@@ -227,21 +229,29 @@ Outputs:
   PublicSubnet:
     Description: SubnetId of the public subnet
     Value: !Ref 'PublicSubnet'
+    Export:
+      Name: !Sub "${AWS::StackName}-PublicSubnet"
   PublicSubnetRouteTable:
     Description: Public route table
     Value: !Ref 'PublicSubnetRouteTable'
   PublicInstanceSG:
     Description: SG for instances in public subnet
     Value: !Ref 'PublicInstanceSG'
+    Export:
+      Name: !Sub "${AWS::StackName}-PublicInstanceSG"
   PrivateSubnet:
     Description: SubnetId of the public subnet
     Value: !Ref 'PrivateSubnet'
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateSubnet"
   PrivateSubnetRouteTable:
     Description: Private route table
     Value: !Ref 'PrivateSubnetRouteTable'
   PrivateSubnetInstanceSG:
     Description: SG for instances in the private subnet
     Value: !Ref 'PrivateSubnetInstanceSG'
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateSubnetInstanceSG"
   LinuxBastionHost:
     Description: Linux bastion instance
     Value: !Ref 'LinuxBastionHost'

@@ -31,6 +31,9 @@ Parameters:
   Ec2Desc:
     Type: String
     Description: EC2 instance's description
+  Ec2Port:
+    Type: String
+    Description: The port the EC2 instance's application listens on
   Scaling:
     Type: CommaDelimitedList
     Description: Scaling dimensions of the Autoscaling Group - min, max, desired
@@ -54,12 +57,12 @@ Resources:
       HealthCheck:
         HealthyThreshold: '3'
         Interval: '10'
-        Target: HTTP:80/
+        Target: !Join ["", ["HTTP:", !Ref Ec2Port, "/"]]
         Timeout: '5'
         UnhealthyThreshold: '5'
       Listeners:
-      - LoadBalancerPort: '80'
-        InstancePort: '80'
+      - LoadBalancerPort: !Ref Ec2Port
+        InstancePort: !Ref Ec2Port
         Protocol: HTTP
       Scheme: !FindInMap
         - LayerMap
@@ -83,6 +86,9 @@ Resources:
           !Sub |
             #!/bin/bash -xe
             echo ${LoadBalancer.DNSName} > /z.txt
+            sed '/export TOMCAT/d' httpd > httpd
+            echo 'export TOMCAT=${TomcatElb}' >> /etc/sysconfig/httpd
+            #sed 's/\(TOMCAT\=\).*/\1abc/' /etc/sysconfig/httpd > httpd.txt
             # yum update -y httpd            
   AutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
