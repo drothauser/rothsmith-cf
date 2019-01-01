@@ -1,0 +1,820 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: NCCT Base Load Balancers
+Parameters:
+  SubnetsExternal:
+    Type: 'List<AWS::EC2::Subnet::Id>'
+    Default: "subnet-3bac0a4d,subnet-bca20dd8"
+    Description: External SubnetIds for SVC, SVCA, EXMB, BIN, DBMS, ENMB
+  SecurityGroupsExternal:
+    Type: 'List<AWS::EC2::SecurityGroup::Id>'
+    Default: sg-49a1fb2d
+    Description: External Security Groups for SVC, SVCA, EXMB, BIN, DBMS, ENMB
+  SubnetsInternal:
+    Type: 'List<AWS::EC2::Subnet::Id>'
+    Default: "subnet-3bac0a4d,subnet-bca20dd8"
+    Description: Internal SubnetIds for INMB, Fusion, CVV
+  SecurityGroupsInternal:
+    Type: 'List<AWS::EC2::SecurityGroup::Id>'
+    Default: sg-43db8127
+    Description: Internal Security Groups for INMB, Fusion, CVV
+  SubnetsManagement:
+    Type: 'List<AWS::EC2::Subnet::Id>'
+    Default: "subnet-3bac0a4d,subnet-bca20dd8"
+    Description: Management SubnetIds for SMC (Help Desk Management)
+  SecurityGroupsManagement:
+    Type: 'List<AWS::EC2::SecurityGroup::Id>'
+    Default: sg-7da2f819
+    Description: Management Security Groups for SMC (Help Desk Management)
+  SubnetsMaintenance:
+    Type: 'List<AWS::EC2::Subnet::Id>'
+    Default: "subnet-3bac0a4d,subnet-bca20dd8"
+    Description: Maintenance SubnetIds for SMS
+  SecurityGroupsMaintenance:
+    Type: 'List<AWS::EC2::SecurityGroup::Id>'
+    Default: sg-56a1fb32
+    Description: Maintenance Security Groups for SMS
+  SubnetsSimulator:
+    Type: 'List<AWS::EC2::Subnet::Id>'
+    Default: "subnet-3bac0a4d,subnet-bca20dd8"
+    Description: Simulator SubnetIds for BSIM, GSIM
+  SecurityGroupsSimulator:
+    Type: 'List<AWS::EC2::SecurityGroup::Id>'
+    Default: sg-77aff513
+    Description: Simulator Security Groups for BSIM, GSIM
+  AmiLinux:
+    Type: String
+    Default: ami-e6dbbf87
+    Description: Linux AMI ID
+  AmiWindows:
+    Type: String
+    Default: ami-cd5a3aac
+    Description: Windows AMI ID  
+  KeyPair:
+    Type: String
+    Description: EC2 Key Pair  
+  S3Bucket:
+    Type: String
+    Default: ncct-cloudformation-templates
+    Description: The S3 bucket containing CloudFormation templates
+  ResourcePrefix:
+    Type: String
+    Default: NCCT
+    Description: The prefix for resource names
+  Owner:
+    Type: String
+    Default: ncctadmin@caci.com
+    Description: Contact information for the owner of the stack's resources
+  NcctService:
+    Type: String
+    Default: ALL
+    Description: NCCT Services
+    AllowedValues: 
+      - ALL        
+      - SMS
+      - DMS
+      - INMB
+      - ENMB
+      - EXMB
+      - SVC
+      - SVCA
+      - FUS
+      - BIN
+      - DBMS    
+      - BSIM
+      - GSIM
+      - CVV 
+Conditions:   
+  CreateSMS: !Or [!Equals [ !Ref NcctService, SMS ], !Equals [ !Ref NcctService, ALL ]]
+  CreateDMS: !Or [!Equals [ !Ref NcctService, DMS ], !Equals [ !Ref NcctService, ALL ]]
+  CreateINMB: !Or [!Equals [ !Ref NcctService, INMB ], !Equals [ !Ref NcctService, ALL ]]
+  CreateENMB: !Or [!Equals [ !Ref NcctService, ENMB ], !Equals [ !Ref NcctService, ALL ]]
+  CreateEXMB: !Or [!Equals [ !Ref NcctService, EXMB ], !Equals [ !Ref NcctService, ALL ]]
+  CreateSVC: !Or [!Equals [ !Ref NcctService, SVC ], !Equals [ !Ref NcctService, ALL ]]
+  CreateSVCA: !Or [!Equals [ !Ref NcctService, SVCA ], !Equals [ !Ref NcctService, ALL ]]
+  CreateFUS: !Or [!Equals [ !Ref NcctService, FUS ], !Equals [ !Ref NcctService, ALL ]]
+  CreateBIN: !Or [!Equals [ !Ref NcctService, BIN ], !Equals [ !Ref NcctService, ALL ]]
+  CreateDBMS: !Or [!Equals [ !Ref NcctService, DBMS ], !Equals [ !Ref NcctService, ALL ]]
+  CreateBSIM: !Or [!Equals [ !Ref NcctService, BSIM ], !Equals [ !Ref NcctService, ALL ]]
+  CreateGSIM: !Or [!Equals [ !Ref NcctService, GSIM ], !Equals [ !Ref NcctService, ALL ]]  
+  CreateCVV: !Or [!Equals [ !Ref NcctService, CVV ], !Equals [ !Ref NcctService, ALL ]]
+  #CreateSMC1: !Or [!Equals [ !Ref NcctService, SMC1 ], !Equals [ !Ref NcctService, ALL ]]
+Mappings:  
+  LayerMap:
+    External:
+      # If 2+ resources, separate with comma:
+      #subnets: "subnet-3bac0a4d, subnet-bca20dd8"
+      #secgroups: "sg-49a1fb2d, sg-49a1fb2d"
+      subnets: "subnet-3bac0a4d"
+      secgroups: "sg-49a1fb2d"
+    Internal:      
+      subnets: "subnet-bca20dd8"
+      secgroups: "sg-43db8127"
+    Maintenance:
+      subnets: "subnet-3bac0a4d"
+      secgroups: "sg-56a1fb32"
+    Management:      
+      subnets: "subnet-bca20dd8"
+      secgroups: "sg-7da2f819"
+    Simulator:
+      subnets: "subnet-3bac0a4d"
+      secgroups: "sg-77aff513"
+Resources:
+  SMSLoadBalancer:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - "/ncct-elb.yaml"
+      Parameters:
+        ElbSNs: !Join [ ",", !Ref SubnetsMaintenance]
+        ElbSGs: !Join [ ",", !Ref SecurityGroupsMaintenance]
+        ResourcePrefix: !Ref ResourcePrefix
+        SvcAbbr: SMS
+        Owner: !Ref Owner
+        Desc: !Join [" ", [!Ref ResourcePrefix, "System Management Servers", "Load Balancer"]]
+        ElbPort: 22
+        Ec2Port: 22
+        Protocol: TCP
+  INMBLoadBalancer:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - "/ncct-elb.yaml"
+      Parameters:
+        ElbSNs: !Join [ ",", !Ref SubnetsInternal]
+        ElbSGs: !Join [ ",", !Ref SecurityGroupsInternal]
+        ResourcePrefix: !Ref ResourcePrefix
+        SvcAbbr: INMB
+        Owner: !Ref Owner
+        Desc: !Join [" ", [!Ref ResourcePrefix, "Internal Message Bus", "Load Balancer"]]
+        ElbPort: 3389
+        Ec2Port: 3389
+        Protocol: TCP
+  ENMBLoadBalancer:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - "/ncct-elb.yaml"          
+      Parameters:
+        ElbSNs: !Join [ ",", !Ref SubnetsExternal]
+        ElbSGs: !Join [ ",", !Ref SecurityGroupsExternal]
+        ResourcePrefix: !Ref ResourcePrefix
+        SvcAbbr: ENMB
+        Owner: !Ref Owner
+        Desc: !Join [" ", [!Ref ResourcePrefix, "Enclave Message Bus", "Load Balancer"]]
+        ElbPort: 3389
+        Ec2Port: 3389
+        Protocol: TCP
+  EXMBLoadBalancer:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - "/ncct-elb.yaml"
+      Parameters:
+        ElbSNs: !Join [ ",", !Ref SubnetsExternal]
+        ElbSGs: !Join [ ",", !Ref SecurityGroupsExternal]
+        ResourcePrefix: !Ref ResourcePrefix
+        SvcAbbr: EXMB
+        Owner: !Ref Owner
+        Desc: !Join [" ", [!Ref ResourcePrefix, "External Message Bus", "Load Balancer"]]
+        ElbPort: 3389
+        Ec2Port: 3389
+        Protocol: TCP
+  SVCLoadBalancer:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - "/ncct-elb.yaml"         
+      Parameters:
+        ElbSNs: !Join [ ",", !Ref SubnetsExternal]
+        ElbSGs: !Join [ ",", !Ref SecurityGroupsExternal]
+        ResourcePrefix: !Ref ResourcePrefix
+        SvcAbbr: SVC
+        Owner: !Ref Owner
+        Desc: !Join [" ", [!Ref ResourcePrefix, "NES Web Service", "Load Balancer"]]
+        ElbPort: 3389
+        Ec2Port: 3389
+        Protocol: TCP
+  SVCALoadBalancer:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - "/ncct-elb.yaml"         
+      Parameters:
+        ElbSNs: !Join [ ",", !Ref SubnetsExternal]
+        ElbSGs: !Join [ ",", !Ref SecurityGroupsExternal]
+        ResourcePrefix: !Ref ResourcePrefix
+        SvcAbbr: SVCA
+        Owner: !Ref Owner
+        Desc: !Join [" ", [!Ref ResourcePrefix, "NES Adapters", "Load Balancer"]]
+        ElbPort: 3389
+        Ec2Port: 3389
+        Protocol: TCP
+  DBMSLoadBalancer:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - "/ncct-elb.yaml"         
+      Parameters:
+        ElbSNs: !Join [ ",", !Ref SubnetsExternal]
+        ElbSGs: !Join [ ",", !Ref SecurityGroupsExternal]
+        ResourcePrefix: !Ref ResourcePrefix
+        SvcAbbr: DBMS
+        Owner: !Ref Owner
+        Desc: !Join [" ", [!Ref ResourcePrefix, "DBMS Monitor", "Load Balancer"]]
+        ElbPort: 3389
+        Ec2Port: 3389
+        Protocol: TCP
+  FUSLoadBalancer:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - "/ncct-elb.yaml"
+      Parameters:
+        ElbSNs: !Join [ ",", !Ref SubnetsInternal]
+        ElbSGs: !Join [ ",", !Ref SecurityGroupsInternal]
+        ResourcePrefix: !Ref ResourcePrefix
+        SvcAbbr: FUS
+        Owner: !Ref Owner
+        Desc: !Join [" ", [!Ref ResourcePrefix, "NES Fusion", "Load Balancer"]]
+        ElbPort: 3389
+        Ec2Port: 3389
+        Protocol: TCP
+  BINLoadBalancer:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - "/ncct-elb.yaml"
+      Parameters:
+        ElbSNs: !Join [ ",", !Ref SubnetsExternal]
+        ElbSGs: !Join [ ",", !Ref SecurityGroupsExternal]
+        ResourcePrefix: !Ref ResourcePrefix
+        SvcAbbr: BIN
+        Owner: !Ref Owner
+        Desc: !Join [" ", [!Ref ResourcePrefix, "NES Binary", "Load Balancer"]]
+        ElbPort: 3389
+        Ec2Port: 3389
+        Protocol: TCP
+  BSIMLoadBalancer:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - "/ncct-elb.yaml"
+      Parameters:
+        ElbSNs: !Join [ ",", !Ref SubnetsSimulator]
+        ElbSGs: !Join [ ",", !Ref SecurityGroupsSimulator]
+        ResourcePrefix: !Ref ResourcePrefix
+        SvcAbbr: BSIM
+        Owner: !Ref Owner
+        Desc: !Join [" ", [!Ref ResourcePrefix, "Binary Simulator", "Load Balancer"]]
+        ElbPort: 3389
+        Ec2Port: 3389
+        Protocol: TCP
+  GSIMLoadBalancer:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - "/ncct-elb.yaml"
+      Parameters:
+        ElbSNs: !Join [ ",", !Ref SubnetsSimulator]
+        ElbSGs: !Join [ ",", !Ref SecurityGroupsSimulator]
+        ResourcePrefix: !Ref ResourcePrefix
+        SvcAbbr: GSIM
+        Owner: !Ref Owner
+        Desc: !Join [" ", [!Ref ResourcePrefix, "Ground Simulator", "Load Balancer"]]
+        ElbPort: 3389
+        Ec2Port: 3389
+        Protocol: TCP
+  CVVLoadBalancer:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - "/ncct-elb.yaml"
+      Parameters:
+        ElbSNs: !Join [ ",", !Ref SubnetsInternal]
+        ElbSGs: !Join [ ",", !Ref SecurityGroupsInternal]
+        ResourcePrefix: !Ref ResourcePrefix
+        SvcAbbr: CVV
+        Owner: !Ref Owner
+        Desc: !Join [" ", [!Ref ResourcePrefix, "Configuration Verification and Validation", "Load Balancer"]]
+        ElbPort: 22
+        Ec2Port: 22
+        Protocol: TCP
+  SMSService: 
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateSMS
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - "/ncct-linux-service.yaml"
+      Parameters:
+        #Ec2SNs: !Join [ ",", !Ref SubnetsMaintenance]
+        #Ec2SGs: !Join [ ",", !Ref SecurityGroupsMaintenance]
+        Ec2SNs: !Join [ ",", !Ref SubnetsMaintenance]
+        Ec2SGs: !Join [ ",", !Ref SecurityGroupsMaintenance]
+        Ec2KeyPair: !Ref KeyPair
+        AmiId: !Ref AmiLinux
+        Ec2Role: DevOps
+        Ec2Type: t2.micro
+        ResourcePrefix: !Ref ResourcePrefix
+        SvcAbbr: SMS
+        Ec2Owner: !Ref Owner
+        Ec2Desc: !Join [" ", [!Ref ResourcePrefix, "System Management"]]
+        NightShutdown: "false"
+        Scaling: "1,1,1"
+        Ec2Port: 22
+        ConfigFile: SMS.xml
+        ElbName: !GetAtt [SMSLoadBalancer, Outputs.ElbName]        
+        ElbDnsKVPs: !Join
+        - "`n"
+        - - !GetAtt [SMSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [INMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [ENMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [EXMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [SVCLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [SVCALoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [DBMSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [FUSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [BINLoadBalancer, Outputs.ElbDnsKVP]
+  DMSService1: 
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateDMS
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - "/ncct-domain-controller.yaml"
+      Parameters:
+        Ec2SNs: !Select [ "0", !Ref SubnetsManagement]
+        Ec2SGs: !Join [ ",", !Ref SecurityGroupsManagement]        
+        Ec2KeyPair: !Ref KeyPair
+        AmiId: !Ref AmiWindows
+        Ec2Role: DevOps
+        Ec2Type: t2.micro
+        ResourcePrefix: !Ref ResourcePrefix
+        SvcAbbr: 'DMS-1'
+        Ec2Owner: !Ref Owner
+        Ec2Desc: !Join [" ", [!Ref ResourcePrefix, "Windows Domain Controller 1"]]
+        NightShutdown: "false"
+        Scaling: "1,1,1"
+        Ec2Port: 3389
+        ConfigFile: DMS.xml 
+  DMSService2: 
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateDMS
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - "/ncct-domain-controller.yaml"
+      Parameters:
+        Ec2SNs: !Select [ "1", !Ref SubnetsManagement]
+        Ec2SGs: !Join [ ",", !Ref SecurityGroupsManagement]        
+        Ec2KeyPair: !Ref KeyPair
+        AmiId: !Ref AmiWindows
+        Ec2Role: DevOps
+        Ec2Type: t2.micro
+        ResourcePrefix: !Ref ResourcePrefix
+        SvcAbbr: 'DMS-2'
+        Ec2Owner: !Ref Owner
+        Ec2Desc: !Join [" ", [!Ref ResourcePrefix, "Windows Domain Controller 2"]]
+        NightShutdown: "false"
+        Scaling: "1,1,1"
+        Ec2Port: 3389
+        ConfigFile: DMS.xml           
+  INMBService: 
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateINMB
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - "/ncct-windows-service.yaml"
+      Parameters:
+        Ec2SNs: !Join [ ",", !Ref SubnetsInternal]
+        Ec2SGs: !Join [ ",", !Ref SecurityGroupsInternal]
+        Ec2KeyPair: !Ref KeyPair
+        AmiId: !Ref AmiWindows
+        Ec2Role: DevOps
+        Ec2Type: t2.micro
+        ResourcePrefix: !Ref ResourcePrefix
+        SvcAbbr: INMB
+        Ec2Owner: !Ref Owner
+        Ec2Desc: !Join [" ", [!Ref ResourcePrefix, "Internal Message Bus"]]
+        NightShutdown: "true"
+        Scaling: "1,1,1"
+        Ec2Port: 3389        
+        ConfigFile: INMB.xml
+        ElbName: !GetAtt [INMBLoadBalancer, Outputs.ElbName]        
+        ElbDnsKVPs: !Join
+        - "`n"
+        - - !GetAtt [SMSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [INMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [ENMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [EXMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [SVCLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [SVCALoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [DBMSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [FUSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [BINLoadBalancer, Outputs.ElbDnsKVP]
+  ENMBService: 
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateENMB
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - "/ncct-windows-service.yaml"
+      Parameters:
+        Ec2SNs: !Join [ ",", !Ref SubnetsInternal]
+        Ec2SGs: !Join [ ",", !Ref SecurityGroupsInternal]
+        Ec2KeyPair: !Ref KeyPair
+        AmiId: !Ref AmiWindows
+        Ec2Role: DevOps
+        Ec2Type: t2.micro
+        ResourcePrefix: !Ref ResourcePrefix
+        SvcAbbr: ENMB
+        Ec2Owner: !Ref Owner
+        Ec2Desc: !Join [" ", [!Ref ResourcePrefix, "Enclave Message Bus"]]
+        NightShutdown: "true"
+        Scaling: "1,1,1"
+        Ec2Port: 3389
+        ConfigFile: ENMB.xml        
+        ElbName: !GetAtt [ENMBLoadBalancer, Outputs.ElbName]        
+        ElbDnsKVPs: !Join
+        - "`n"
+        - - !GetAtt [SMSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [INMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [ENMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [EXMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [SVCLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [SVCALoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [DBMSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [FUSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [BINLoadBalancer, Outputs.ElbDnsKVP]
+  EXMBService: 
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateEXMB
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - "/ncct-windows-service.yaml"
+      Parameters:
+        Ec2SNs: !Join [ ",", !Ref SubnetsInternal]
+        Ec2SGs: !Join [ ",", !Ref SecurityGroupsInternal]
+        Ec2KeyPair: !Ref KeyPair
+        AmiId: !Ref AmiWindows
+        Ec2Role: DevOps
+        Ec2Type: t2.micro
+        ResourcePrefix: !Ref ResourcePrefix
+        SvcAbbr: EXMB
+        Ec2Owner: !Ref Owner
+        Ec2Desc: !Join [" ", [!Ref ResourcePrefix, "External Message Bus"]]
+        NightShutdown: "true"
+        Scaling: "1,1,1"
+        Ec2Port: 3389
+        ConfigFile: EXMB.xml
+        ElbName: !GetAtt [EXMBLoadBalancer, Outputs.ElbName]       
+        ElbDnsKVPs: !Join
+        - "`n"
+        - - !GetAtt [SMSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [INMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [ENMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [EXMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [SVCLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [SVCALoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [DBMSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [FUSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [BINLoadBalancer, Outputs.ElbDnsKVP]      
+  SVCService: 
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateSVC
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - "/ncct-windows-service.yaml"
+      Parameters:
+        Ec2SNs: !Join [ ",", !Ref SubnetsExternal]
+        Ec2SGs: !Join [ ",", !Ref SecurityGroupsExternal]
+        Ec2KeyPair: !Ref KeyPair
+        AmiId: !Ref AmiWindows
+        Ec2Role: DevOps
+        Ec2Type: t2.micro
+        ResourcePrefix: !Ref ResourcePrefix
+        SvcAbbr: SVC
+        Ec2Owner: !Ref Owner
+        Ec2Desc: !Join [" ", [!Ref ResourcePrefix, "NES Web Service"]]
+        NightShutdown: "true"
+        Scaling: "1,1,1"
+        Ec2Port: 3389
+        ConfigFile: SVC.xml        
+        ElbName: !GetAtt [SVCLoadBalancer, Outputs.ElbName]        
+        ElbDnsKVPs: !Join
+        - "`n"
+        - - !GetAtt [SMSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [INMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [ENMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [EXMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [SVCLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [SVCALoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [DBMSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [FUSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [BINLoadBalancer, Outputs.ElbDnsKVP]
+  SVCAService: 
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateSVCA
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - "/ncct-windows-service.yaml"
+      Parameters:
+        Ec2SNs: !Join [ ",", !Ref SubnetsExternal]
+        Ec2SGs: !Join [ ",", !Ref SecurityGroupsExternal]
+        Ec2KeyPair: !Ref KeyPair
+        AmiId: !Ref AmiWindows
+        Ec2Role: DevOps
+        Ec2Type: t2.micro
+        ResourcePrefix: !Ref ResourcePrefix
+        SvcAbbr: SVCA
+        Ec2Owner: !Ref Owner
+        Ec2Desc: !Join [" ", [!Ref ResourcePrefix, "NES Adapters"]]
+        NightShutdown: "true"
+        Scaling: "1,1,1"
+        Ec2Port: 3389
+        ConfigFile: SVCA.xml        
+        ElbName: !GetAtt [SVCALoadBalancer, Outputs.ElbName]        
+        ElbDnsKVPs: !Join
+        - "`n"
+        - - !GetAtt [SMSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [INMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [ENMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [EXMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [SVCLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [SVCALoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [DBMSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [FUSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [BINLoadBalancer, Outputs.ElbDnsKVP]
+  DBMSService: 
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateDBMS
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - "/ncct-windows-service.yaml"
+      Parameters:
+        Ec2SNs: !Join [ ",", !Ref SubnetsExternal]
+        Ec2SGs: !Join [ ",", !Ref SecurityGroupsExternal]
+        Ec2KeyPair: !Ref KeyPair
+        AmiId: !Ref AmiWindows
+        Ec2Role: DevOps
+        Ec2Type: t2.micro
+        ResourcePrefix: !Ref ResourcePrefix
+        SvcAbbr: DBMS
+        Ec2Owner: !Ref Owner
+        Ec2Desc: !Join [" ", [!Ref ResourcePrefix, "DBMS Monitor"]]
+        NightShutdown: "true"
+        Scaling: "1,1,1"
+        Ec2Port: 3389
+        ConfigFile: DBMS.xml        
+        ElbName: !GetAtt [DBMSLoadBalancer, Outputs.ElbName]        
+        ElbDnsKVPs: !Join
+        - "`n"
+        - - !GetAtt [SMSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [INMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [ENMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [EXMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [SVCLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [SVCALoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [DBMSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [FUSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [BINLoadBalancer, Outputs.ElbDnsKVP]
+  FUSService: 
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateFUS
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - "/ncct-windows-service.yaml"
+      Parameters:
+        Ec2SNs: !Join [ ",", !Ref SubnetsExternal]
+        Ec2SGs: !Join [ ",", !Ref SecurityGroupsExternal]
+        Ec2KeyPair: !Ref KeyPair
+        AmiId: !Ref AmiWindows
+        Ec2Role: DevOps
+        Ec2Type: t2.micro
+        ResourcePrefix: !Ref ResourcePrefix
+        SvcAbbr: FUS
+        Ec2Owner: !Ref Owner
+        Ec2Desc: !Join [" ", [!Ref ResourcePrefix, "NES Fusion"]]
+        NightShutdown: "true"
+        Scaling: "1,1,1"
+        Ec2Port: 3389        
+        ConfigFile: FUS.xml
+        ElbName: !GetAtt [FUSLoadBalancer, Outputs.ElbName]        
+        ElbDnsKVPs: !Join
+        - "`n"
+        - - !GetAtt [SMSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [INMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [ENMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [EXMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [SVCLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [SVCALoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [DBMSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [FUSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [BINLoadBalancer, Outputs.ElbDnsKVP]
+  BINService: 
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateBIN
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - "/ncct-windows-service.yaml"
+      Parameters:
+        Ec2SNs: !Join [ ",", !Ref SubnetsExternal]
+        Ec2SGs: !Join [ ",", !Ref SecurityGroupsExternal]
+        Ec2KeyPair: !Ref KeyPair
+        AmiId: !Ref AmiWindows
+        Ec2Role: DevOps
+        Ec2Type: t2.micro
+        ResourcePrefix: !Ref ResourcePrefix
+        SvcAbbr: BIN
+        Ec2Owner: !Ref Owner
+        Ec2Desc: !Join [" ", [!Ref ResourcePrefix, "NES Binary"]]
+        NightShutdown: "true"
+        Scaling: "1,1,1"
+        Ec2Port: 3389
+        ConfigFile: BIN.xml
+        ElbName: !GetAtt [BINLoadBalancer, Outputs.ElbName]        
+        ElbDnsKVPs: !Join
+        - "`n"
+        - - !GetAtt [SMSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [INMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [ENMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [EXMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [SVCLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [SVCALoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [DBMSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [FUSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [BINLoadBalancer, Outputs.ElbDnsKVP]
+  BSIMService: 
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateBSIM
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - "/ncct-windows-service.yaml"
+      Parameters:
+        Ec2SNs: !Join [ ",", !Ref SubnetsSimulator]
+        Ec2SGs: !Join [ ",", !Ref SecurityGroupsSimulator]
+        Ec2KeyPair: !Ref KeyPair
+        AmiId: !Ref AmiWindows
+        Ec2Role: DevOps
+        Ec2Type: t2.micro
+        ResourcePrefix: !Ref ResourcePrefix
+        SvcAbbr: BSIM
+        Ec2Owner: !Ref Owner
+        Ec2Desc: !Join [" ", [!Ref ResourcePrefix, "Binary Simulator"]]
+        NightShutdown: "true"
+        Scaling: "1,1,1"
+        Ec2Port: 3389
+        ConfigFile: BSIM.xml
+        ElbName: !GetAtt [BSIMLoadBalancer, Outputs.ElbName]        
+        ElbDnsKVPs: !Join
+        - "`n"
+        - - !GetAtt [SMSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [INMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [ENMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [EXMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [SVCLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [SVCALoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [DBMSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [FUSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [BINLoadBalancer, Outputs.ElbDnsKVP]
+  GSIMService: 
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateGSIM
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - "/ncct-windows-service.yaml"
+      Parameters:
+        Ec2SNs: !Join [ ",", !Ref SubnetsSimulator]
+        Ec2SGs: !Join [ ",", !Ref SecurityGroupsSimulator]
+        Ec2KeyPair: !Ref KeyPair
+        AmiId: !Ref AmiWindows
+        Ec2Role: DevOps
+        Ec2Type: t2.micro
+        ResourcePrefix: !Ref ResourcePrefix
+        SvcAbbr: GSIM
+        Ec2Owner: !Ref Owner
+        Ec2Desc: !Join [" ", [!Ref ResourcePrefix, "Ground Simulator"]]
+        NightShutdown: "true"
+        Scaling: "1,1,1"
+        Ec2Port: 3389
+        ConfigFile: GSIM.xml
+        ElbName: !GetAtt [GSIMLoadBalancer, Outputs.ElbName]        
+        ElbDnsKVPs: !Join
+        - "`n"
+        - - !GetAtt [SMSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [INMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [ENMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [EXMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [SVCLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [SVCALoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [DBMSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [FUSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [BINLoadBalancer, Outputs.ElbDnsKVP]
+
+  CVVService: 
+    Type: AWS::CloudFormation::Stack
+    Condition: CreateCVV
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.us-gov-west-1.amazonaws.com/'
+          - !Ref S3Bucket
+          - "/ncct-linux-service.yaml"
+      Parameters:
+        Ec2SNs: !Join [ ",", !Ref SubnetsInternal]
+        Ec2SGs: !Join [ ",", !Ref SecurityGroupsInternal]
+        Ec2KeyPair: !Ref KeyPair
+        AmiId: !Ref AmiLinux
+        Ec2Role: DevOps
+        Ec2Type: t2.micro
+        ResourcePrefix: !Ref ResourcePrefix
+        SvcAbbr: CVV
+        Ec2Owner: !Ref Owner
+        Ec2Desc: !Join [" ", [!Ref ResourcePrefix, "Configuration Verification & Validation"]]
+        NightShutdown: "false"
+        Scaling: "1,1,1"
+        Ec2Port: 22
+        ConfigFile: CVV.xml
+        ElbName: !GetAtt [CVVLoadBalancer, Outputs.ElbName]        
+        ElbDnsKVPs: !Join
+        - "`n"
+        - - !GetAtt [SMSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [INMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [ENMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [EXMBLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [SVCLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [SVCALoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [DBMSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [FUSLoadBalancer, Outputs.ElbDnsKVP]
+          - !GetAtt [BINLoadBalancer, Outputs.ElbDnsKVP]

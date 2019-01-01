@@ -214,6 +214,30 @@ Resources:
         Value: !Sub 'Linux bastion ${VPCCIDR}'
       - Key: CloudFormationStack
         Value: !Ref 'AWS::StackId'
+  S3VpcEndpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    DependsOn:
+      - VPC
+      - PrivateSubnetRouteTable
+      - PublicSubnetRouteTable
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: '*'
+            Effect: Allow
+            Resource: '*'
+            Principal: '*'
+      RouteTableIds:
+        - Ref: PrivateSubnetRouteTable
+        - Ref: PublicSubnetRouteTable
+      ServiceName:
+        'Fn::Join':
+          - ''
+          - - com.amazonaws.
+            - Ref: 'AWS::Region'
+            - .s3
+      VpcId:
+        Ref: VPC
 Outputs:
   VPCId:
     Description: VPCId of the newly created VPC

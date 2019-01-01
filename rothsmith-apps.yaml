@@ -16,6 +16,7 @@ Metadata:
 Parameters:
   VPCStack:
     Type: String
+    Default: 'ROTHSMITH-VPC'
     Description: The VPC stack to obtain exported values from
   S3Bucket:
     Type: String
@@ -32,7 +33,7 @@ Mappings:
       name: Apache Web Server
       owner: drothauser@yahoo.com
       description: DMZ Apache Web Server
-      serviceCode: web
+      svcCode: web
     private: 
       ami: "ami-07c8b576e965e389e"
       role: "CloudWatch"
@@ -42,8 +43,37 @@ Mappings:
       name: Tomcat Server
       owner: drothauser@yahoo.com
       description: Tomcat Server
-      serviceCode: tomcat
+      svcCode: tomcat
 Resources:
+  S3AccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+  S3RolePolicies:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: s3access
+      PolicyDocument:
+        Statement:
+        - Effect: Allow
+          Action: s3:*
+          Resource: "*"
+      Roles:
+      - Ref: S3AccessRole
+  S3InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+      - Ref: S3AccessRole
   Tomcat:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -67,16 +97,16 @@ Resources:
             !Sub '${VPCStack}-PrivateSubnetInstanceSG'
         AmiId: !FindInMap [TierMap, private, ami]
         Ec2Port: !FindInMap [TierMap, private, port]
-        Ec2Role: !FindInMap [TierMap, private, role]
+        Ec2Role: !Ref S3InstanceProfile
         Ec2Type: !FindInMap [TierMap, private, type]
         Ec2Name: !FindInMap [TierMap, private, name]
         Ec2Owner: !FindInMap [TierMap, private, owner]
         Ec2Desc: !FindInMap [TierMap, private, description]        
         Facing: private
         Scaling: !FindInMap [TierMap, private, scaling]  
-        ServiceCode: !FindInMap [TierMap, private, serviceCode]  
-        DNSKeyPairs: " "
-  PublicWeb:
+        SvcCode: !FindInMap [TierMap, private, svcCode]  
+        ElbDnsKVPs: " " # Only needed for public web proxy tier
+  WebProxy:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: !Join
@@ -99,12 +129,16 @@ Resources:
             !Sub '${VPCStack}-PublicInstanceSG'
         AmiId: !FindInMap [TierMap, public, ami]
         Ec2Port: !FindInMap [TierMap, public, port]
-        Ec2Role: !FindInMap [TierMap, public, role]
+        Ec2Role: !Ref S3InstanceProfile
         Ec2Type: !FindInMap [TierMap, public, type]
         Ec2Name: !FindInMap [TierMap, public, name]
         Ec2Owner: !FindInMap [TierMap, public, owner]
         Ec2Desc: !FindInMap [TierMap, public, description]        
         Facing: public
         Scaling: !FindInMap [TierMap, public, scaling] 
-        ServiceCode: !FindInMap [TierMap, public, serviceCode]        
-        DNSKeyPairs: !Join [" ", [!Join ["=", ['TOMCAT', "${Tomcat.URL}"]], !Join ["=", ['TOMCAT', "${Tomcat.URL}"]]]]
+        SvcCode: !FindInMap [TierMap, public, svcCode]        
+        ElbDnsKVPs: !Join [" ", [!GetAtt [Tomcat, Outputs.ElbDnsKVP], !GetAtt [Tomcat, Outputs.ElbDnsKVP]]]
+Outputs:
+  WebProxyELB:
+    Description: Load Balancer Resource
+    Value: !GetAtt [WebProxy, Outputs.ElbDnsName]

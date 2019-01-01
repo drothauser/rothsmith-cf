@@ -1,7 +1,8 @@
 #!/bin/bash -xe
-echo ${LoadBalancer.DNSName} > /z.txt
+aws s3 cp s3://rothsmith-scripts/httpd.conf /etc/httpd/conf/httpd.conf 
 cd /etc/sysconfig
-sed '/export TOMCAT/d' httpd > httpd
-echo 'export TOMCAT=${TomcatElb}' >> httpd
-#sed 's/\(TOMCAT\=\).*/\1abc/' /etc/sysconfig/httpd > httpd.txt
-cat httpd
+kvp="$1"
+key=`echo $kvp | cut -f1 -d"="`
+sed "/export $key/d" httpd
+echo "export $kvp" >> httpd
+service httpd restart

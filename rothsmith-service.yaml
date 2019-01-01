@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: DMZ ELB
+Description: Creates an ELB, ASG, and LC to provide a service
 Parameters:
   ElbSNs:
     Type: 'List<AWS::EC2::Subnet::Id>'
@@ -44,10 +44,10 @@ Parameters:
       - public
       - private
     Description: Will this service be public facing or in a private network layer
-  ServiceCode:
+  SvcCode:
     Type: String
     Description: The service code to identify what initialization script to run in userdata
-  DNSKeyPairs:
+  ElbDnsKVPs:
     Type: String
     Description: List of service key pairs to append to the /etc/sysconfig/httd httpd file
 Mappings:
@@ -92,11 +92,11 @@ Resources:
           !Sub |
             #!/bin/bash -xe
             
-            script="rothsmith-$serviceCode.sh"
+            script="rothsmith-${SvcCode}.sh"
             cd /tmp
             aws s3 cp s3://rothsmith-scripts/$script . --region ${AWS::Region}               
  
-            source ./$script ${DNSKeyPairs}  &> $script.log
+            source ./$script ${ElbDnsKVPs}  &> $script.log
 
             # yum update -y httpd            
   AutoScalingGroup:
@@ -122,6 +122,12 @@ Resources:
           Value: !Ref Ec2Desc
           PropagateAtLaunch: "true"
 Outputs:
-  URL:
-    Description: URL of the sample website
-    Value: !Join ['', ['http://', !GetAtt [LoadBalancer, DNSName]]]
+  ElbName:
+    Description: Load Balancer Resource
+    Value: !Ref LoadBalancer
+  ElbDnsName:
+    Description: DNS Name for Elastic Load Balancer
+    Value: !GetAtt LoadBalancer.DNSName
+  ElbDnsKVP:
+    Description: Key-value pair for a DNS entry in a hashtable.
+    Value: !Join ["=", [!Ref SvcCode,  !GetAtt LoadBalancer.DNSName]]
