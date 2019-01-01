@@ -32,6 +32,7 @@ Mappings:
       name: Apache Web Server
       owner: drothauser@yahoo.com
       description: DMZ Apache Web Server
+      serviceCode: web
     private: 
       ami: "ami-07c8b576e965e389e"
       role: "CloudWatch"
@@ -41,6 +42,7 @@ Mappings:
       name: Tomcat Server
       owner: drothauser@yahoo.com
       description: Tomcat Server
+      serviceCode: tomcat
 Resources:
   Tomcat:
     Type: AWS::CloudFormation::Stack
@@ -72,6 +74,8 @@ Resources:
         Ec2Desc: !FindInMap [TierMap, private, description]        
         Facing: private
         Scaling: !FindInMap [TierMap, private, scaling]  
+        ServiceCode: !FindInMap [TierMap, private, serviceCode]  
+        DNSKeyPairs: " "
   PublicWeb:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -102,4 +106,5 @@ Resources:
         Ec2Desc: !FindInMap [TierMap, public, description]        
         Facing: public
         Scaling: !FindInMap [TierMap, public, scaling] 
-        
+        ServiceCode: !FindInMap [TierMap, public, serviceCode]        
+        DNSKeyPairs: !Join [" ", [!Join ["=", ['TOMCAT', "${Tomcat.URL}"]], !Join ["=", ['TOMCAT', "${Tomcat.URL}"]]]]

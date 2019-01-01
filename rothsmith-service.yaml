@@ -44,6 +44,12 @@ Parameters:
       - public
       - private
     Description: Will this service be public facing or in a private network layer
+  ServiceCode:
+    Type: String
+    Description: The service code to identify what initialization script to run in userdata
+  DNSKeyPairs:
+    Type: String
+    Description: List of service key pairs to append to the /etc/sysconfig/httd httpd file
 Mappings:
   LayerMap:
     public:
@@ -85,10 +91,13 @@ Resources:
         "Fn::Base64":
           !Sub |
             #!/bin/bash -xe
-            echo ${LoadBalancer.DNSName} > /z.txt
-            sed '/export TOMCAT/d' httpd > httpd
-            echo 'export TOMCAT=${TomcatElb}' >> /etc/sysconfig/httpd
-            #sed 's/\(TOMCAT\=\).*/\1abc/' /etc/sysconfig/httpd > httpd.txt
+            
+            script="rothsmith-$serviceCode.sh"
+            cd /tmp
+            aws s3 cp s3://rothsmith-scripts/$script . --region ${AWS::Region}               
+ 
+            source ./$script ${DNSKeyPairs}  &> $script.log
+
             # yum update -y httpd            
   AutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
