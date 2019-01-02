@@ -140,5 +140,5 @@ Resources:
         ElbDnsKVPs: !Join [" ", [!GetAtt [Tomcat, Outputs.ElbDnsKVP], !GetAtt [Tomcat, Outputs.ElbDnsKVP]]]
 Outputs:
   WebProxyELB:
-    Description: Load Balancer Resource
-    Value: !GetAtt [WebProxy, Outputs.ElbDnsName]
+    Description: Web Proxy URL
+    Value: !Join ['', ['http://', !GetAtt [WebProxy, Outputs.ElbDnsName]]]
