@@ -23,10 +23,9 @@ Parameters:
     Default: rothsmith-cloudformation
     Description: The S3 bucket containing CloudFormation templates
 Mappings:
-  TierMap: 
-    public: 
+  ServerMap: 
+    webProxy: 
       ami: "ami-0151f162d1ff20101"
-      role: "CloudWatch"
       port: '80'
       scaling: "1,1,1"
       type: "t2.micro"
@@ -34,16 +33,37 @@ Mappings:
       owner: drothauser@yahoo.com
       description: DMZ Apache Web Server
       svcCode: web
-    private: 
-      ami: "ami-07c8b576e965e389e"
-      role: "CloudWatch"
+      tier: public
+    tomcat: 
+      ami: "ami-07c8b576e965e389e"      
       port: '8080'
-      scaling: "1,1,1"
+      scaling: "1,3,2"
       type: "t2.micro"
       name: Tomcat Server
       owner: drothauser@yahoo.com
       description: Tomcat Server
       svcCode: tomcat
+      tire: private
+    nexus: 
+      ami: "ami-0b6f97817bd60cd5c"      
+      port: '8081'
+      scaling: "1,1,1"
+      type: "t2.micro"
+      name: Nexus Server
+      owner: drothauser@yahoo.com
+      description: Nexus Repository Manager
+      svcCode: nexus
+      tier: private
+    jenkins: 
+      ami: "ami-0f0243a84e786b72c"      
+      port: '80'
+      scaling: "1,1,1"
+      type: "t2.micro"
+      name: Jenkins Server
+      owner: drothauser@yahoo.com
+      description: Jenkins Continuous Integration
+      svcCode: jenkins
+      tier: private
 Resources:
   S3AccessRole:
     Type: AWS::IAM::Role
@@ -83,30 +103,36 @@ Resources:
           - !Ref S3Bucket
           - '/rothsmith-service.yaml'
       Parameters:
-        ElbSNs: 
-          'Fn::ImportValue': 
-            !Sub '${VPCStack}-PrivateSubnet'
+        ElbSNs: !Join
+          - ','
+          - - 'Fn::ImportValue': 
+                !Sub '${VPCStack}-PrivateSubnet1'
+            - 'Fn::ImportValue': 
+                !Sub '${VPCStack}-PrivateSubnet2'
         ElbSGs: 
           'Fn::ImportValue': 
             !Sub '${VPCStack}-PrivateSubnetInstanceSG'
-        Ec2SNs: 
-          'Fn::ImportValue': 
-            !Sub '${VPCStack}-PrivateSubnet'
+        Ec2SNs: !Join
+          - ','
+          - - 'Fn::ImportValue': 
+                !Sub '${VPCStack}-PrivateSubnet1'
+            - 'Fn::ImportValue': 
+                !Sub '${VPCStack}-PrivateSubnet2'
         Ec2SGs:  
           'Fn::ImportValue': 
             !Sub '${VPCStack}-PrivateSubnetInstanceSG'
-        AmiId: !FindInMap [TierMap, private, ami]
-        Ec2Port: !FindInMap [TierMap, private, port]
+        AmiId: !FindInMap [ServerMap, tomcat, ami]
+        Ec2Port: !FindInMap [ServerMap, tomcat, port]
         Ec2Role: !Ref S3InstanceProfile
-        Ec2Type: !FindInMap [TierMap, private, type]
-        Ec2Name: !FindInMap [TierMap, private, name]
-        Ec2Owner: !FindInMap [TierMap, private, owner]
-        Ec2Desc: !FindInMap [TierMap, private, description]        
+        Ec2Type: !FindInMap [ServerMap, tomcat, type]
+        Ec2Name: !FindInMap [ServerMap, tomcat, name]
+        Ec2Owner: !FindInMap [ServerMap, tomcat, owner]
+        Ec2Desc: !FindInMap [ServerMap, tomcat, description]        
         Facing: private
-        Scaling: !FindInMap [TierMap, private, scaling]  
-        SvcCode: !FindInMap [TierMap, private, svcCode]  
+        Scaling: !FindInMap [ServerMap, tomcat, scaling]  
+        SvcCode: !FindInMap [ServerMap, tomcat, svcCode]  
         ElbDnsKVPs: " " # Only needed for public web proxy tier
-  WebProxy:
+  Nexus:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: !Join
@@ -117,27 +143,65 @@ Resources:
       Parameters:
         ElbSNs: 
           'Fn::ImportValue': 
-            !Sub '${VPCStack}-PublicSubnet'
+            !Sub '${VPCStack}-PrivateSubnet1'
+        ElbSGs: 
+          'Fn::ImportValue': 
+            !Sub '${VPCStack}-PrivateSubnetInstanceSG'
+        Ec2SNs: 
+          'Fn::ImportValue': 
+            !Sub '${VPCStack}-PrivateSubnet1'
+        Ec2SGs:  
+          'Fn::ImportValue': 
+            !Sub '${VPCStack}-PrivateSubnetInstanceSG'
+        AmiId: !FindInMap [ServerMap, nexus, ami]
+        Ec2Port: !FindInMap [ServerMap, nexus, port]
+        Ec2Role: !Ref S3InstanceProfile
+        Ec2Type: !FindInMap [ServerMap, nexus, type]
+        Ec2Name: !FindInMap [ServerMap, nexus, name]
+        Ec2Owner: !FindInMap [ServerMap, nexus, owner]
+        Ec2Desc: !FindInMap [ServerMap, nexus, description]        
+        Facing: private
+        Scaling: !FindInMap [ServerMap, nexus, scaling]  
+        SvcCode: !FindInMap [ServerMap, nexus, svcCode]  
+        ElbDnsKVPs: " " # Only needed for webProxy web proxy tier
+  WebProxy:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.amazonaws.com/'
+          - !Ref S3Bucket
+          - '/rothsmith-service.yaml'
+      Parameters:
+        ElbSNs: !Join
+          - ','
+          - - 'Fn::ImportValue': 
+                !Sub '${VPCStack}-PublicSubnet1'
+            - 'Fn::ImportValue': 
+                !Sub '${VPCStack}-PublicSubnet2'
         ElbSGs: 
           'Fn::ImportValue': 
             !Sub '${VPCStack}-PublicInstanceSG'
-        Ec2SNs: 
-          'Fn::ImportValue': 
-            !Sub '${VPCStack}-PublicSubnet'
+        Ec2SNs: !Join
+          - ','
+          - - 'Fn::ImportValue': 
+                !Sub '${VPCStack}-PublicSubnet1'
+            - 'Fn::ImportValue': 
+                !Sub '${VPCStack}-PublicSubnet2'
         Ec2SGs: 
           'Fn::ImportValue': 
             !Sub '${VPCStack}-PublicInstanceSG'
-        AmiId: !FindInMap [TierMap, public, ami]
-        Ec2Port: !FindInMap [TierMap, public, port]
+        AmiId: !FindInMap [ServerMap, webProxy, ami]
+        Ec2Port: !FindInMap [ServerMap, webProxy, port]
         Ec2Role: !Ref S3InstanceProfile
-        Ec2Type: !FindInMap [TierMap, public, type]
-        Ec2Name: !FindInMap [TierMap, public, name]
-        Ec2Owner: !FindInMap [TierMap, public, owner]
-        Ec2Desc: !FindInMap [TierMap, public, description]        
+        Ec2Type: !FindInMap [ServerMap, webProxy, type]
+        Ec2Name: !FindInMap [ServerMap, webProxy, name]
+        Ec2Owner: !FindInMap [ServerMap, webProxy, owner]
+        Ec2Desc: !FindInMap [ServerMap, webProxy, description]        
         Facing: public
-        Scaling: !FindInMap [TierMap, public, scaling] 
-        SvcCode: !FindInMap [TierMap, public, svcCode]        
-        ElbDnsKVPs: !Join [" ", [!GetAtt [Tomcat, Outputs.ElbDnsKVP], !GetAtt [Tomcat, Outputs.ElbDnsKVP]]]
+        Scaling: !FindInMap [ServerMap, webProxy, scaling] 
+        SvcCode: !FindInMap [ServerMap, webProxy, svcCode]        
+        ElbDnsKVPs: !Join [" ", [!GetAtt [Tomcat, Outputs.ElbDnsKVP], !GetAtt [Nexus, Outputs.ElbDnsKVP]]]
 Outputs:
   WebProxyELB:
     Description: Web Proxy URL

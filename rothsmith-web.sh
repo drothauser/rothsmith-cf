@@ -1,8 +1,11 @@
 #!/bin/bash -xe
-aws s3 cp s3://rothsmith-scripts/httpd.conf /etc/httpd/conf/httpd.conf 
+aws s3 cp s3://rothsmith-scripts/httpd.conf /etc/httpd/conf/httpd.conf
 cd /etc/sysconfig
-kvp="$1"
-key=`echo $kvp | cut -f1 -d"="`
-sed "/export $key/d" httpd
-echo "export $kvp" >> httpd
+for kvp in "$@"
+do
+    key=`echo $kvp | cut -f1 -d"="`
+    sed "/export $key/d" httpd > httpd.tmp
+    cat httpd.tmp > httpd
+    echo "export $kvp" >> httpd
+done
 service httpd restart
