@@ -37,7 +37,7 @@ Parameters:
   Scaling:
     Type: CommaDelimitedList
     Description: Scaling dimensions of the Autoscaling Group - min, max, desired
-  Facing:
+  Tier:
     Type: String
     Default: public
     AllowedValues:
@@ -51,7 +51,7 @@ Parameters:
     Type: String
     Description: List of service key pairs to append to the /etc/sysconfig/httd httpd file
 Mappings:
-  LayerMap:
+  TierMap:
     public:
       scheme: internet-facing
     private:
@@ -71,8 +71,8 @@ Resources:
         InstancePort: !Ref Ec2Port
         Protocol: HTTP
       Scheme: !FindInMap
-        - LayerMap
-        - !Ref Facing
+        - TierMap
+        - !Ref Tier
         - scheme
       SecurityGroups: !Ref ElbSGs
       Subnets: !Ref ElbSNs

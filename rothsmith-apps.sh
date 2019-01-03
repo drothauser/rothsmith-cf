@@ -6,13 +6,13 @@ if [ $# -eq 0 ]
 fi
 
 # ParameterKey=ELBSubnets,ParameterValue=\"subnet-09cd0870f808f2677\\,subnet-0386c83240089af69\" \
+# --debug\
 
 aws cloudformation create-stack\
- --debug\
+ --capabilities CAPABILITY_IAM \
+ --disable-rollback \
  --stack-name $1\
  --template-body file://rothsmith-apps.yaml\
  --parameters\
-    ParameterKey=PubElbSNs,ParameterValue=\"subnet-09cd0870f808f2677\" \
-    ParameterKey=PubElbSGs,ParameterValue=\"sg-07748e0a19e936ae4\" \
-    ParameterKey=PubEc2SNs,ParameterValue=subnet-09cd0870f808f2677\
-    ParameterKey=PubEc2SGs,ParameterValue=sg-07748e0a19e936ae4
+    ParameterKey=VPCStack,ParameterValue=\"ROTHSMITH-VPC\" \
+    ParameterKey=S3Bucket,ParameterValue=\"rothsmith-cloudformation\" 

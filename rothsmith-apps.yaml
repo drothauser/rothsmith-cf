@@ -43,7 +43,7 @@ Mappings:
       owner: drothauser@yahoo.com
       description: Tomcat Server
       svcCode: tomcat
-      tire: private
+      tier: private
     nexus: 
       ami: "ami-0b6f97817bd60cd5c"      
       port: '8081'
@@ -53,7 +53,7 @@ Mappings:
       owner: drothauser@yahoo.com
       description: Nexus Repository Manager
       svcCode: nexus
-      tier: private
+      tier: public
     jenkins: 
       ami: "ami-0f0243a84e786b72c"      
       port: '80'
@@ -128,7 +128,7 @@ Resources:
         Ec2Name: !FindInMap [ServerMap, tomcat, name]
         Ec2Owner: !FindInMap [ServerMap, tomcat, owner]
         Ec2Desc: !FindInMap [ServerMap, tomcat, description]        
-        Facing: private
+        Tier: !FindInMap [ServerMap, tomcat, tier]  
         Scaling: !FindInMap [ServerMap, tomcat, scaling]  
         SvcCode: !FindInMap [ServerMap, tomcat, svcCode]  
         ElbDnsKVPs: " " # Only needed for public web proxy tier
@@ -143,10 +143,10 @@ Resources:
       Parameters:
         ElbSNs: 
           'Fn::ImportValue': 
-            !Sub '${VPCStack}-PrivateSubnet1'
+            !Sub '${VPCStack}-PublicSubnet1'
         ElbSGs: 
           'Fn::ImportValue': 
-            !Sub '${VPCStack}-PrivateSubnetInstanceSG'
+            !Sub '${VPCStack}-PublicInstanceSG'
         Ec2SNs: 
           'Fn::ImportValue': 
             !Sub '${VPCStack}-PrivateSubnet1'
@@ -160,7 +160,7 @@ Resources:
         Ec2Name: !FindInMap [ServerMap, nexus, name]
         Ec2Owner: !FindInMap [ServerMap, nexus, owner]
         Ec2Desc: !FindInMap [ServerMap, nexus, description]        
-        Facing: private
+        Tier: !FindInMap [ServerMap, nexus, tier] 
         Scaling: !FindInMap [ServerMap, nexus, scaling]  
         SvcCode: !FindInMap [ServerMap, nexus, svcCode]  
         ElbDnsKVPs: " " # Only needed for webProxy web proxy tier
@@ -198,7 +198,7 @@ Resources:
         Ec2Name: !FindInMap [ServerMap, webProxy, name]
         Ec2Owner: !FindInMap [ServerMap, webProxy, owner]
         Ec2Desc: !FindInMap [ServerMap, webProxy, description]        
-        Facing: public
+        Tier: !FindInMap [ServerMap, webProxy, tier]   
         Scaling: !FindInMap [ServerMap, webProxy, scaling] 
         SvcCode: !FindInMap [ServerMap, webProxy, svcCode]        
         ElbDnsKVPs: !Join [" ", [!GetAtt [Tomcat, Outputs.ElbDnsKVP], !GetAtt [Nexus, Outputs.ElbDnsKVP]]]
@@ -206,3 +206,6 @@ Outputs:
   WebProxyELB:
     Description: Web Proxy URL
     Value: !Join ['', ['http://', !GetAtt [WebProxy, Outputs.ElbDnsName]]]
+  NexusELB:
+    Description: Nexus URL
+    Value: !Join ['', ['http://', !GetAtt [Nexus, Outputs.ElbDnsName],':',!FindInMap [ServerMap, nexus, port]]]
