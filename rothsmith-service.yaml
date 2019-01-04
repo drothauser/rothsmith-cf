@@ -7,6 +7,9 @@ Parameters:
   ElbSGs:
     Type: 'List<AWS::EC2::SecurityGroup::Id>'
     Description: The list of Security Groups used by your ELB
+  ElbPort:
+    Type: String
+    Description: The port the ELB listens on
   Ec2SNs:
     Type: 'List<AWS::EC2::Subnet::Id>'
     Description: EC2 Instance Subnets
@@ -67,7 +70,7 @@ Resources:
         Timeout: '5'
         UnhealthyThreshold: '5'
       Listeners:
-      - LoadBalancerPort: !Ref Ec2Port
+      - LoadBalancerPort: !Ref ElbPort
         InstancePort: !Ref Ec2Port
         Protocol: HTTP
       Scheme: !FindInMap
