@@ -215,4 +215,4 @@ Outputs:
     Value: !Join ['', ['http://', !GetAtt [WebProxy, Outputs.ElbDnsName]]]
   NexusELB:
     Description: Nexus URL
-    Value: !Join ['', ['http://', !GetAtt [Nexus, Outputs.ElbDnsName],':',!FindInMap [ServerMap, nexus, elbPort]]]
+    Value: !Join ['', ['http://', !GetAtt [Nexus, Outputs.ElbDnsName],':',!FindInMap [ServerMap, nexus, elbPort]]]    

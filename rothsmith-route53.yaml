@@ -1,0 +1,93 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: DNS for rothsmith.net
+Parameters:
+  RootDNSName:
+    Description: Alias target DNS name for the domain's A record of the "zone apex" (aka root domain or naked domain) e.g. "rothsmith.net".  It should be the DNS Name of a load balancer.
+    Type: String
+  NexusDNSName:
+    Description: Alias target DNS name for the Nexus subdomain's A record ("nexus.rothsmith.net)". It should be the DNS Name of a load balancer.
+    Type: String
+  NexusDNSName:
+    Description: Alias target DNS name for the Jenkins subdomain's A record ("jenkins.rothsmith.net"). It should be the DNS Name of a load balancer.
+    Type: String
+Resources:
+  RootHostedZone:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      Name: rothsmith.net.
+      HostedZoneConfig:
+        Comment: rothsmith.net.
+  JenkinsRothsmithNetNS:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Name: jenkins.rothsmith.net.
+      Type: NS
+      HostedZoneId:
+        Ref: RootHostedZone
+      ResourceRecords:
+      - ns-162.awsdns-20.com.
+      - ns-1760.awsdns-28.co.uk.
+      - ns-1257.awsdns-29.org.
+      - ns-928.awsdns-52.net.
+      TTL: 300
+  NexusRothsmithNetNS:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Name: nexus.rothsmith.net.
+      Type: NS
+      HostedZoneId:
+        Ref: RootHostedZone
+      ResourceRecords:
+      - ns-441.awsdns-55.com.
+      - ns-1157.awsdns-16.org.
+      - ns-1646.awsdns-13.co.uk.
+      - ns-635.awsdns-15.net.
+      TTL: 300
+  RothsmithNetA:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Name: rothsmith.net.
+      Type: A
+      AliasTarget:
+        DNSName: !Ref RootDNSName
+        EvaluateTargetHealth: false
+        HostedZoneId: Z35SXDOTRQ7X7K
+      HostedZoneId:
+        Ref: RootHostedZone
+
+  JenkinsHostedZone:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      Name: jenkins.rothsmith.net.
+      HostedZoneConfig:
+        Comment: jenkins.rothsmith.net.
+  JenkinsRothsmithNetA:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Name: jenkins.rothsmith.net.
+      Type: A
+      AliasTarget:
+        DNSName: !Ref JenkinsDNSName
+        EvaluateTargetHealth: false
+        HostedZoneId: Z2DM6YURBQQUN0
+      HostedZoneId:
+        Ref: JenkinsHostedZone
+
+  NexusHostedZone:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      Name: nexus.rothsmith.net.
+      HostedZoneConfig:
+        Comment: nexus.rothsmith.net.
+  NexusRothsmithNetA:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Name: nexus.rothsmith.net.
+      Type: A
+      AliasTarget:
+        DNSName: !Ref NexusDNSName
+        EvaluateTargetHealth: false
+        HostedZoneId: Z35SXDOTRQ7X7K
+      HostedZoneId:
+        Ref: NexusHostedZone
+
