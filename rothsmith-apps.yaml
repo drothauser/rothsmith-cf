@@ -210,9 +210,19 @@ Resources:
         SvcCode: !FindInMap [ServerMap, webProxy, svcCode]        
         ElbDnsKVPs: !Join [" ", [!GetAtt [Tomcat, Outputs.ElbDnsKVP], !GetAtt [Nexus, Outputs.ElbDnsKVP]]]
 Outputs:
-  WebProxyELB:
+  WebProxyURL:
     Description: Web Proxy URL
     Value: !Join ['', ['http://', !GetAtt [WebProxy, Outputs.ElbDnsName]]]
-  NexusELB:
+  WebProxyDNS:
+    Description: Web Proxy URL
+    Value: !GetAtt [WebProxy, Outputs.ElbDnsName]
+    Export:
+      Name: !Sub "${AWS::StackName}-WebProxyDNS"
+  NexusURL:
     Description: Nexus URL
-    Value: !Join ['', ['http://', !GetAtt [Nexus, Outputs.ElbDnsName],':',!FindInMap [ServerMap, nexus, elbPort]]]    
+    Value: !Join ['', ['http://', !GetAtt [Nexus, Outputs.ElbDnsName],':',!FindInMap [ServerMap, nexus, elbPort]]]      
+  NexusDNS:
+    Description: Nexus URL
+    Value: !GetAtt [Nexus, Outputs.ElbDnsName]
+    Export:
+      Name: !Sub "${AWS::StackName}-NexusDNS"
