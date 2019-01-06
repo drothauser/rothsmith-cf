@@ -56,7 +56,8 @@ Mappings:
       owner: drothauser@yahoo.com
       description: Nexus Repository Manager
       svcCode: nexus
-      tier: public
+      tier: private
+      #tier: public
     jenkins: 
       ami: "ami-0f0243a84e786b72c"      
       ec2Port: '80'
