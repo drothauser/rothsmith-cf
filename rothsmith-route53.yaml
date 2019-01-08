@@ -5,6 +5,12 @@ Parameters:
     Type: String
     Default: 'ROTHSMITH-APPS'
     Description: The application stack to obtain exported values from
+  WebProxyDNS:
+    Type: String
+    Description: Web Proxy URL
+  NexusDNS:
+    Type: String
+    Description: Nexus URL
 Resources:
   # = = = = = = = = = = = = = = = = = #
   # Root Website
@@ -24,8 +30,9 @@ Resources:
         DNSName: !Join
           - '.'
           - - 'dualstack'
-            - 'Fn::ImportValue': 
-                !Sub '${AppsStack}-WebProxyDNS'
+            - !Ref WebProxyDNS
+            #- 'Fn::ImportValue': 
+            #    !Sub '${AppsStack}-WebProxyDNS'
         EvaluateTargetHealth: false
         HostedZoneId: Z35SXDOTRQ7X7K
       HostedZoneId:
@@ -74,8 +81,9 @@ Resources:
         DNSName: !Join
           - '.'
           - - 'dualstack'
-            - 'Fn::ImportValue': 
-                !Sub '${AppsStack}-NexusDNS'
+            - !Ref NexusDNS
+            #- 'Fn::ImportValue': 
+            #    !Sub '${AppsStack}-NexusDNS'
         EvaluateTargetHealth: false
         HostedZoneId: Z35SXDOTRQ7X7K
       HostedZoneId:
