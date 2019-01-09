@@ -7,10 +7,10 @@ Parameters:
     Description: The application stack to obtain exported values from
   WebProxyDNS:
     Type: String
-    Description: Web Proxy URL
+    Description: Web Proxy DNS host name
   NexusDNS:
     Type: String
-    Description: Nexus URL
+    Description: Nexus DNS host name
 Resources:
   # = = = = = = = = = = = = = = = = = #
   # Root Website
