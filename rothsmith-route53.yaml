@@ -34,7 +34,7 @@ Resources:
             #- 'Fn::ImportValue': 
             #    !Sub '${AppsStack}-WebProxyDNS'
         EvaluateTargetHealth: false
-        HostedZoneId: Z35SXDOTRQ7X7K
+        HostedZoneName: "Rothsmith Root"
       HostedZoneId:
         Ref: RootHostedZone
   NexusRothsmithNetNS:
@@ -85,7 +85,7 @@ Resources:
             #- 'Fn::ImportValue': 
             #    !Sub '${AppsStack}-NexusDNS'
         EvaluateTargetHealth: false
-        HostedZoneId: Z35SXDOTRQ7X7K
+        HostedZoneName: "Rothsmith Nexus"
       HostedZoneId:
         Ref: NexusHostedZone
   #NexusRothsmithNetSubdomainNS:

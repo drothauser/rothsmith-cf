@@ -40,7 +40,7 @@ Parameters:
   Scaling:
     Type: CommaDelimitedList
     Description: Scaling dimensions of the Autoscaling Group - min, max, desired
-  Tier:
+  ElbTier:
     Type: String
     Default: public
     AllowedValues:
@@ -73,9 +73,10 @@ Resources:
       - LoadBalancerPort: !Ref ElbPort
         InstancePort: !Ref Ec2Port
         Protocol: HTTP
+      LoadBalancerName: !Join ["-", [!Ref SvcCode, !Ref Tier]]
       Scheme: !FindInMap
         - TierMap
-        - !Ref Tier
+        - !Ref ElbTier
         - scheme
       SecurityGroups: !Ref ElbSGs
       Subnets: !Ref ElbSNs
