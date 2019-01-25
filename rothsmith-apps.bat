@@ -10,11 +10,13 @@ if "%1"=="" (
 )
 set STACKNAME=%1
 
+REM --template-body file://rothsmith-apps.yaml^
+
 aws cloudformation create-stack^
  --capabilities CAPABILITY_IAM ^
  --disable-rollback ^
  --stack-name %STACKNAME%^
- --template-body file://rothsmith-apps.yaml^
+ --template-body s3://rothsmith-cloudformation/rothsmith-apps.yaml^
  --parameters^
     ParameterKey=VPCStack,ParameterValue=^"ROTHSMITH-VPC^" ^
     ParameterKey=S3Bucket,ParameterValue=^"rothsmith-cloudformation^" 

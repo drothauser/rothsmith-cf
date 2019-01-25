@@ -73,7 +73,7 @@ Resources:
       - LoadBalancerPort: !Ref ElbPort
         InstancePort: !Ref Ec2Port
         Protocol: HTTP
-      LoadBalancerName: !Join ["-", [!Ref SvcCode, !Ref Tier]]
+      LoadBalancerName: !Join ["-", [!Ref SvcCode, !Ref ElbTier]]
       Scheme: !FindInMap
         - TierMap
         - !Ref ElbTier

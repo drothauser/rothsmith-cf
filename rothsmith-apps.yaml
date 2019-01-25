@@ -57,7 +57,6 @@ Mappings:
       description: Nexus Repository Manager
       svcCode: nexus
       elbTier: public
-      #elbTier: private
     jenkins: 
       ami: "ami-0f0243a84e786b72c"      
       ec2Port: '80'
@@ -134,7 +133,7 @@ Resources:
         Ec2Name: !FindInMap [ServerMap, tomcat, name]
         Ec2Owner: !FindInMap [ServerMap, tomcat, owner]
         Ec2Desc: !FindInMap [ServerMap, tomcat, description]        
-        Tier: !FindInMap [ServerMap, tomcat, elbTier]  
+        ElbTier: !FindInMap [ServerMap, tomcat, elbTier]  
         Scaling: !FindInMap [ServerMap, tomcat, scaling]  
         SvcCode: !FindInMap [ServerMap, tomcat, svcCode]  
         ElbDnsKVPs: " " # Only needed for public web proxy tier
@@ -167,7 +166,7 @@ Resources:
         Ec2Name: !FindInMap [ServerMap, nexus, name]
         Ec2Owner: !FindInMap [ServerMap, nexus, owner]
         Ec2Desc: !FindInMap [ServerMap, nexus, description]        
-        Tier: !FindInMap [ServerMap, nexus, elbTier] 
+        ElbTier: !FindInMap [ServerMap, nexus, elbTier] 
         Scaling: !FindInMap [ServerMap, nexus, scaling]  
         SvcCode: !FindInMap [ServerMap, nexus, svcCode]  
         ElbDnsKVPs: " " # Only needed for webProxy web proxy tier
@@ -206,7 +205,7 @@ Resources:
         Ec2Name: !FindInMap [ServerMap, webProxy, name]
         Ec2Owner: !FindInMap [ServerMap, webProxy, owner]
         Ec2Desc: !FindInMap [ServerMap, webProxy, description]        
-        Tier: !FindInMap [ServerMap, webProxy, elbTier]   
+        ElbTier: !FindInMap [ServerMap, webProxy, elbTier]   
         Scaling: !FindInMap [ServerMap, webProxy, scaling] 
         SvcCode: !FindInMap [ServerMap, webProxy, svcCode]        
         ElbDnsKVPs: !Join [" ", [!GetAtt [Tomcat, Outputs.ElbDnsKVP], !GetAtt [Nexus, Outputs.ElbDnsKVP]]]
