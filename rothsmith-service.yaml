@@ -2,7 +2,8 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: Creates an ELB, ASG, and LC to provide a service
 Parameters:
   ElbSNs:
-    Type: 'List<AWS::EC2::Subnet::Id>'
+    #Type: 'List<AWS::EC2::Subnet::Id>'
+    Type: String 
     Description: The list of SubnetIds in your Virtual Private Cloud (VPC) for your ELB
   ElbSGs:
     Type: 'List<AWS::EC2::SecurityGroup::Id>'
@@ -53,6 +54,9 @@ Parameters:
   ElbDnsKVPs:
     Type: String
     Description: List of service key pairs to append to the /etc/sysconfig/httd httpd file
+  VpcId:
+    Type: String
+    Description: The VPC Id
 Mappings:
   TierMap:
     public:
@@ -60,29 +64,71 @@ Mappings:
     private:
       scheme: internal
 Resources:
-  LoadBalancer:
-    Type: AWS::ElasticLoadBalancing::LoadBalancer
-    Properties:      
-      HealthCheck:
-        HealthyThreshold: '3'
-        Interval: '10'
-        Target: !Join ["", ["HTTP:", !Ref Ec2Port, "/"]]
-        Timeout: '5'
-        UnhealthyThreshold: '5'
-      Listeners:
-      - LoadBalancerPort: !Ref ElbPort
-        InstancePort: !Ref Ec2Port
-        Protocol: HTTP
-      LoadBalancerName: !Join ["-", [!Ref SvcCode, !Ref ElbTier]]
+#  LoadBalancer:
+#    Type: AWS::ElasticLoadBalancing::LoadBalancer
+#    Properties:      
+#      HealthCheck:
+#        HealthyThreshold: '3'
+#        Interval: '10'
+#        Target: !Join ["", ["HTTP:", !Ref Ec2Port, "/"]]
+#        Timeout: '5'
+#        UnhealthyThreshold: '5'
+#      Listeners:
+#      - LoadBalancerPort: !Ref ElbPort
+#        InstancePort: !Ref Ec2Port
+#        Protocol: HTTP
+#      LoadBalancerName: !Join ["-", [!Ref SvcCode, !Ref ElbTier]]
+#      Scheme: !FindInMap
+#        - TierMap
+#        - !Ref ElbTier
+#        - scheme
+#      SecurityGroups: !Ref ElbSGs
+#      Subnets: !Ref ElbSNs
+#      Tags:
+#      - Key: Name
+#        Value: !Ref Ec2Name
+#############
+  LoadBalancer: # Application Load Balancer
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Join ["-", [!Ref SvcCode, !Ref ElbTier]]
       Scheme: !FindInMap
         - TierMap
         - !Ref ElbTier
         - scheme
       SecurityGroups: !Ref ElbSGs
-      Subnets: !Ref ElbSNs
+      Subnets: !Split [",", !Ref ElbSNs]
+      Type: application
       Tags:
       - Key: Name
         Value: !Ref Ec2Name
+  LoadBalancerListener: 
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: !Ref ElbPort
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn:
+            Ref: TargetGroup
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Port: !Ref Ec2Port
+      Protocol: HTTP
+      HealthCheckIntervalSeconds: 10
+      HealthCheckTimeoutSeconds: 5
+      UnhealthyThresholdCount: 5
+      HealthCheckPath: "/"
+      HealthCheckPort: !Ref Ec2Port
+      Name: !Join ["-", [!Ref SvcCode, !Ref ElbTier, "TargetGroup"]]
+      VpcId:
+        Ref: VpcId
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: 60
+##############
   LaunchConfiguration:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
@@ -109,8 +155,10 @@ Resources:
       LaunchConfigurationName: !Ref LaunchConfiguration
       DesiredCapacity: !Select [ "2", !Ref Scaling ]
       HealthCheckGracePeriod: 300
-      LoadBalancerNames:
-      - Ref: LoadBalancer
+      #LoadBalancerNames:
+      #- Ref: LoadBalancer
+      TargetGroupARNs: 
+        - !Ref TargetGroup
       MinSize: !Select [ "0", !Ref Scaling ]
       MaxSize: !Select [ "1", !Ref Scaling ]
       VPCZoneIdentifier: !Ref Ec2SNs
