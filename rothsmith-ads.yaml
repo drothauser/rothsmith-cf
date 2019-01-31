@@ -4,11 +4,7 @@ Parameters:
   SubnetsManagement:
     Type: 'List<AWS::EC2::Subnet::Id>'
     Default: "subnet-3bac0a4d,subnet-bca20dd8"
-    Description: Management SubnetIds for SMC (Help Desk Management)
-  SecurityGroupsManagement:
-    Type: 'List<AWS::EC2::SecurityGroup::Id>'
-    Default: sg-7da2f819
-    Description: Management Security Groups for SMC (Help Desk Management)
+    Description: Subnet IDs for management instances
   ADPassword:
     Type: String
     AllowedPattern: (?=^.{8,64}$)((?=.*\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\d)(?=.*[^A-Za-z0-9\s])(?=.*[a-z])|(?=.*[^A-Za-z0-9\s])(?=.*[A-Z])(?=.*[a-z])|(?=.*\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9\s]))^.*
@@ -19,10 +15,11 @@ Parameters:
     Type: AWS::EC2::VPC::Id
     Description: The VPC ID for the directory server
 Resources:
-  NcctDirectory: 
+  RothsmithDirectory: 
     Type: AWS::DirectoryService::SimpleAD
     Properties: 
-      Name: "ncct.caci.com"
+      CreateAlias: true
+      Name: "rothsmith.net"
       Password: 
         Ref: ADPassword
       Size: "Small"
@@ -30,3 +27,14 @@ Resources:
         SubnetIds: !Ref SubnetsManagement
         VpcId: 
           Ref: VpcId
+Outputs:
+  Alias:
+    Description: Directory Alias
+    Value: !GetAtt RothsmithDirectory.Alias
+    Export:
+      Name: !Sub ${AWS::StackName}-Alias
+  DnsIpAddresses:
+    Description: The IP addresses of the DNS servers for the directory
+    Value: !Join [",", !GetAtt RothsmithDirectory.DnsIpAddresses]
+    Export:
+      Name: !Sub ${AWS::StackName}-DnsIpAddresses
