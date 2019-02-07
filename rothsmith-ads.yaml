@@ -7,9 +7,9 @@ Parameters:
     Description: Subnet IDs for management instances
   ADPassword:
     Type: String
-    AllowedPattern: (?=^.{8,64}$)((?=.*\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\d)(?=.*[^A-Za-z0-9\s])(?=.*[a-z])|(?=.*[^A-Za-z0-9\s])(?=.*[A-Z])(?=.*[a-z])|(?=.*\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9\s]))^.*
-    ConstraintDescription: Password must be complex
-    Default: Tb+KYq\TEZ )~nC~3R2M
+    #AllowedPattern: (?=^.{8,64}$)((?=.*\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\d)(?=.*[^A-Za-z0-9\s])(?=.*[a-z])|(?=.*[^A-Za-z0-9\s])(?=.*[A-Z])(?=.*[a-z])|(?=.*\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9\s]))^.*
+    #ConstraintDescription: Password must be complex. To generate: https://onlinestringtools.com/generate-string-from-regex
+    #Default: h|.%372K1&GC,)dyGTg
     Description: Active Directory administration password
   VpcId:
     Type: AWS::EC2::VPC::Id
