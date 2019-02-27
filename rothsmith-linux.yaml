@@ -1,0 +1,101 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Windows Server Template
+Parameters:
+  AmiId:
+    Type: String
+    Default: ami-04bfee437f38a691e
+    Description: Amazon Machine Image ID
+  Ec2Subnet:
+    Type: AWS::EC2::Subnet::Id
+    Default: subnet-5d163f70
+    Description: EC2 Instance Subnet
+  Ec2SecurityGroups:
+    Type: 'List<AWS::EC2::SecurityGroup::Id>'
+    Default: linux-sg
+    Description: Security Groups for EC2 instance 
+  EC2KeyPair: 
+    Type: String
+    Default: RothsmithKeyPair
+    Description: Provides the name of the Amazon EC2 key pair
+  EC2Profile: 
+    Type: String
+    Default: DevOps
+    Description: The profile/role for this EC2 instance
+  AdsStack:
+    Type: String
+    Default: 'ROTHSMITH-ADS'
+    Description: The Amazon Directory Service stack to obtain exported values from
+  AdsUser:
+    Type: String
+    Default: 'Admin'
+    Description: The Amazon Directory Service administrator user id
+  AdsPassword:
+    Type: String
+    Default: 'Password12345!'
+    Description: The Amazon Directory Service administrator user id
+Resources:
+  Ec2Instance:
+    Type: AWS::EC2::Instance
+    Metadata: 
+      AWS::CloudFormation::Authentication:  
+        rolebased:  
+            type: "S3"  
+            roleName: !Ref EC2Profile  
+            buckets:  
+                - "rothsmith-scripts"
+      AWS::CloudFormation::Init: 
+        config: 
+          packages:
+            yum: 
+              realmd: []
+              krb5-workstation: []
+              sssd: []
+        files:
+          # These files are needed for CloudFormation::Init to work
+          /etc/cfn/cfn-hup.conf:
+              content: !Sub |
+                  [main]
+                  stack=${AWS::StackId}
+                  region=${AWS::Region}
+                  interval=1
+          /etc/cfn/hooks.d/cfn-auto-reloader.conf:
+              content: !Sub |
+                  [cfn-auto-reloader-hook]
+                  triggers=post.update
+                  path=Resources.Server.Metadata.AWS::CloudFormation::Init
+                  action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --region ${AWS::Region} --resource Server
+                  runas=root
+          commands:   
+            1-s3-download: 
+              command: !Sub 'aws s3 cp s3://rothsmith-scripts/domjoin.sh /tmp --region=${AWS::Region}'              
+            2-join-domain: 
+              command: !Sub 'domjoin.sh ${AdsStack}-Name ${AdsUser} ${AdsPassword} ${AdsStack}-DnsPrimaryIP ${AdsStack}-DnsSecondaryIP'
+              cwd: "/tmp"
+    Properties:
+      IamInstanceProfile: !Ref EC2Profile
+      InstanceType: t2.micro
+      ImageId: !Ref AmiId
+      KeyName: !Ref EC2KeyPair
+      #NetworkInterfaces: 
+      #  - AssociatePublicIpAddress: "true"
+      #    DeviceIndex: "0"
+      #    GroupSet: !Ref Ec2SecurityGroups
+      #    SubnetId: !Ref Ec2Subnet
+      SecurityGroupIds: !Ref Ec2SecurityGroups
+      SubnetId: !Ref Ec2Subnet
+      Tags:
+        - Key: Name
+          Value: Linux Server
+      UserData:
+        "Fn::Base64":
+          !Sub |
+          /opt/aws/bin/cfn-init -v -s ${AWS::StackName} -r Ec2Instance --region=${AWS::Region}
+          dirName=${AdsStack}-Name
+          dirId=${AdsStack}-Id
+          primaryIP=${AdsStack}-DnsPrimaryIP
+          secondaryIP=${AdsStack}-DnsSecondaryIP
+          echo "NAME *** $dirName" > /tmp/userdata.log
+          echo "ID *** $dirId" >> /tmp/userdata.log
+          echo "1st *** $primaryIP" >> /tmp/userdata.log 
+          echo "2nd *** $secondaryIP" >> /tmp/userdata.log
+          

@@ -1,17 +1,21 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: Rothsmith Directory Service
 Parameters:
-  SubnetsManagement:
-    Type: 'List<AWS::EC2::Subnet::Id>'
-    Default: "subnet-910521ca,subnet-00524b49"
-    Description: Subnet IDs for management instances
-  ADPassword:
+  DirectoryName:
+    Type: String
+    Default: rothsmith.net
+    Description: The directory name
+  DirectoryPassword:
     Type: String
     NoEcho: true
     #AllowedPattern: (?=^.{8,64}$)((?=.*\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\d)(?=.*[^A-Za-z0-9\s])(?=.*[a-z])|(?=.*[^A-Za-z0-9\s])(?=.*[A-Z])(?=.*[a-z])|(?=.*\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9\s]))^.*
     #ConstraintDescription: Password must be complex. To generate: https://onlinestringtools.com/generate-string-from-regex
     #Default: h|.%372K1&GC,)dyGTg
     Description: Active Directory administration password
+  SubnetsManagement:
+    Type: 'List<AWS::EC2::Subnet::Id>'
+    Default: "subnet-910521ca,subnet-00524b49"
+    Description: Subnet IDs for management instances
   VpcId:
     Type: AWS::EC2::VPC::Id
     Description: The VPC ID for the directory server
@@ -20,22 +24,38 @@ Resources:
     Type: AWS::DirectoryService::SimpleAD
     Properties: 
       CreateAlias: true
-      Name: "rothsmith.net"
+      Name: !Ref DirectoryName
       Password: 
-        Ref: ADPassword
+        Ref: DirectoryPassword
       Size: "Small"
       VpcSettings: 
         SubnetIds: !Ref SubnetsManagement
         VpcId: 
           Ref: VpcId
 Outputs:
+  DirectoryID:
+    Description: Directory ID
+    Value: !Ref RothsmithDirectory
+    Export:
+      Name: !Sub ${AWS::StackName}-Id
+  DirectoryName:
+    Description: Directory ID
+    Value: !Ref DirectoryName
+    Export:
+      Name: !Sub ${AWS::StackName}-Name
   Alias:
     Description: Directory Alias
     Value: !GetAtt RothsmithDirectory.Alias
     Export:
       Name: !Sub ${AWS::StackName}-Alias
-  DnsIpAddresses:
-    Description: The IP addresses of the DNS servers for the directory
-    Value: !Join [",", !GetAtt RothsmithDirectory.DnsIpAddresses]
+  DnsPrimaryIP:
+    Description: The IP address of the directory's primary DNS server
+    Value: !Select ["0", !GetAtt RothsmithDirectory.DnsIpAddresses]
     Export:
-      Name: !Sub ${AWS::StackName}-DnsIpAddresses
+      Name: !Sub ${AWS::StackName}-DnsPrimaryIP
+  DnsSecondaryIP:
+    Description: The IP address of the directory's secondary DNS server
+    Value: !Select ["1", !GetAtt RothsmithDirectory.DnsIpAddresses]
+    Export:
+      Name: !Sub ${AWS::StackName}-DnsSecondaryIP
+  

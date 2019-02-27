@@ -21,6 +21,7 @@ aws cloudformation create-stack\
  --template-body ${templateBodyUrl}\
  --parameters\
     ParameterKey=VpcId,ParameterValue=\"vpc-b3e69dd5\" \
-    ParameterKey=ADPassword,ParameterValue=\"Password12345!\" \
+    ParameterKey=DirectoryName,ParameterValue=\"rothsmith.net\" \
+    ParameterKey=DirectoryPassword,ParameterValue=\"Password12345!\" \
     ParameterKey=SubnetsManagement,ParameterValue=\"subnet-910521ca\,subnet-00524b49\"
     
