@@ -43,11 +43,6 @@ Outputs:
     Value: !Ref DirectoryName
     Export:
       Name: !Sub ${AWS::StackName}-Name
-  Alias:
-    Description: Directory Alias
-    Value: !GetAtt RothsmithDirectory.Alias
-    Export:
-      Name: !Sub ${AWS::StackName}-Alias
   DnsPrimaryIP:
     Description: The IP address of the directory's primary DNS server
     Value: !Select ["0", !GetAtt RothsmithDirectory.DnsIpAddresses]

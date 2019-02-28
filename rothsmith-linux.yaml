@@ -38,7 +38,7 @@ Resources:
     Type: AWS::EC2::Instance
     Metadata: 
       AWS::CloudFormation::Authentication:  
-        rolebased:  
+        S3AccessCreds:  
             type: "S3"  
             roleName: !Ref EC2Profile  
             buckets:  
@@ -50,26 +50,27 @@ Resources:
               realmd: []
               krb5-workstation: []
               sssd: []
-        files:
-          # These files are needed for CloudFormation::Init to work
-          /etc/cfn/cfn-hup.conf:
-              content: !Sub |
-                  [main]
-                  stack=${AWS::StackId}
-                  region=${AWS::Region}
-                  interval=1
-          /etc/cfn/hooks.d/cfn-auto-reloader.conf:
-              content: !Sub |
-                  [cfn-auto-reloader-hook]
-                  triggers=post.update
-                  path=Resources.Server.Metadata.AWS::CloudFormation::Init
-                  action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --region ${AWS::Region} --resource Server
-                  runas=root
-          commands:   
-            1-s3-download: 
-              command: !Sub 'aws s3 cp s3://rothsmith-scripts/domjoin.sh /tmp --region=${AWS::Region}'              
-            2-join-domain: 
-              command: !Sub 'domjoin.sh ${AdsStack}-Name ${AdsUser} ${AdsPassword} ${AdsStack}-DnsPrimaryIP ${AdsStack}-DnsSecondaryIP'
+          files:
+            /tmp/domjoin.sh: 
+              source: "https://s3.amazonaws.com/rothsmith-scripts/domjoin.sh"                         
+              mode: "000744"
+              owner: "root"
+              group: "root"
+              authentication: "S3AccessCreds"        
+          commands:               
+            1-join-domain: 
+              command: './domjoin.sh $DomainName $AdsUserName $AdsPasswd $DnsPrimaryIP $DnsSecondaryIP'
+              env: 
+                AdsUserName: 
+                  !Ref AdsUser
+                AdsPasswd: 
+                  !Ref AdsPassword
+                DomainName: 
+                  "Fn::ImportValue": !Sub "${AdsStack}-Name"
+                DnsPrimaryIP: 
+                  "Fn::ImportValue": !Sub "${AdsStack}-DnsPrimaryIP"
+                DnsSecondaryIP: 
+                  "Fn::ImportValue": !Sub "${AdsStack}-DnsSecondaryIP"
               cwd: "/tmp"
     Properties:
       IamInstanceProfile: !Ref EC2Profile
@@ -89,6 +90,7 @@ Resources:
       UserData:
         "Fn::Base64":
           !Sub |
+          #!/bin/bash
           /opt/aws/bin/cfn-init -v -s ${AWS::StackName} -r Ec2Instance --region=${AWS::Region}
           dirName=${AdsStack}-Name
           dirId=${AdsStack}-Id
