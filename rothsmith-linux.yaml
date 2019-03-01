@@ -27,7 +27,7 @@ Parameters:
     Description: The Amazon Directory Service stack to obtain exported values from
   AdsUser:
     Type: String
-    Default: 'Admin'
+    Default: 'Administrator'
     Description: The Amazon Directory Service administrator user id
   AdsPassword:
     Type: String
@@ -44,12 +44,28 @@ Resources:
             buckets:  
                 - "rothsmith-scripts"
       AWS::CloudFormation::Init: 
-        config: 
+        configSets:
+          ascending: 
+            - "config1"
+            - "config2"
+        config1: 
           packages:
             yum: 
               realmd: []
               krb5-workstation: []
               sssd: []
+              oddjob: []
+              oddjob-mkhomedir: []
+              samba-common-tools: []              
+          services: 
+            sysvinit: 
+              sssd: 
+                enabled: "true"
+                ensureRunning: "true"
+              realmd: 
+                enabled: "true"
+                ensureRunning: "true"
+        config2:
           files:
             /tmp/domjoin.sh: 
               source: "https://s3.amazonaws.com/rothsmith-scripts/domjoin.sh"                         
@@ -59,7 +75,7 @@ Resources:
               authentication: "S3AccessCreds"        
           commands:               
             1-join-domain: 
-              command: './domjoin.sh $DomainName $AdsUserName $AdsPasswd $DnsPrimaryIP $DnsSecondaryIP'
+              command: './domjoin.sh $DomainName $DnsPrimaryIP $DnsSecondaryIP $AdsUserName $AdsPasswd'
               env: 
                 AdsUserName: 
                   !Ref AdsUser
@@ -91,7 +107,7 @@ Resources:
         "Fn::Base64":
           !Sub |
           #!/bin/bash
-          /opt/aws/bin/cfn-init -v -s ${AWS::StackName} -r Ec2Instance --region=${AWS::Region}
+          /opt/aws/bin/cfn-init -v -c ascending -s ${AWS::StackName} -r Ec2Instance --region=${AWS::Region}
           dirName=${AdsStack}-Name
           dirId=${AdsStack}-Id
           primaryIP=${AdsStack}-DnsPrimaryIP

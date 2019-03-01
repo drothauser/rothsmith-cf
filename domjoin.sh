@@ -114,4 +114,4 @@ echo nameserver $primaryIP >> $resolvConf
 echo nameserver $secondaryIP >> $resolvConf
 
 #Executes command to join instance to domain
-echo $domainPasswd | realm join -v --user=$domainAdminId $domainName 
+echo $domainPasswd | /usr/sbin/realm join -v --user=$domainAdminId $domainName 
