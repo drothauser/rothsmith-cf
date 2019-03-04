@@ -1,0 +1,96 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: NCCT Zabbix Updater Function
+Parameters:
+  ResourcePrefix:
+    Type: String
+    Default: NCCT
+    Description: The prefix for resource names
+  Owner:
+    Type: String    
+    Description: The administrator of this function's email address
+  Desc:
+    Type: String
+    Default: Stack to keep Zabbix configuration up to date with current AWS resources
+    Description: Value for Description tag
+  SecurityGroupIds:
+    Type: 'List<AWS::EC2::SecurityGroup::Id>'
+    Description: Security Groups for Lambda function
+  SubnetIds:
+    Type: 'List<AWS::EC2::Subnet::Id>'
+    Description: Subnets for Lambda function
+  ZabbixBaseUrl:
+    Type: String
+    Description: Base URL for Zabbix HTTP API
+
+Resources:
+  ZabbixLambdaFunctionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          -
+            Effect: 'Allow'
+            Principal:
+              Service:
+                - 'lambda.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess'
+        - 'arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess'
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole'
+      Path: '/'
+
+  EC2StateChangeEvent:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      Description: 'Listen for EC2 state to change to either running or terminated'
+      EventPattern:
+        source:
+          - 'aws.ec2'
+        detail-type:
+          - 'EC2 Instance State-change Notification'
+        detail:
+          state:
+            - 'running'
+            - 'terminated'
+      Targets:
+      -
+        Arn: !GetAtt ZabbixSyncFunction.Arn
+        Id: EC2StateChange-ZabbixFunctionTarget
+  
+  LambdaInvokePermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt ZabbixSyncFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt EC2StateChangeEvent.Arn
+
+  ZabbixSyncFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Description: Update Zabbix configuration as AWS instances go up/down
+      Code:
+        S3Bucket: ncct-scripts
+        S3Key: zabbix-sync-scripts.zip
+      Environment:
+        Variables:
+          ZABBIX_BASE_URL: !Ref ZabbixBaseUrl
+      Handler: main.lambda_handler
+      MemorySize: 512
+      ReservedConcurrentExecutions: 1
+      Role: !GetAtt ZabbixLambdaFunctionRole.Arn
+      Runtime: python3.7
+      Timeout: 90
+      VpcConfig:
+        SecurityGroupIds: !Ref SecurityGroupIds
+        SubnetIds: !Ref SubnetIds
+      Tags:
+      - Key: Name
+        Value: !Join ["-", [!Ref ResourcePrefix, "Zabbix", "ConfigSync", "Function"]]
+      - Key: Owner
+        Value: !Ref Owner
+      - Key: Description
+        Value: !Ref Desc

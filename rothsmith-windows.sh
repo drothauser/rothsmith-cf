@@ -1,9 +1,9 @@
 #!/bin/bash
 
 function usage() {
-   echo "Usage: $1 [stack name] [AMI ID] [keypair] [security groups] [subnet] <debug>"
+   echo "Usage: $1 [stack name] [AMI ID] [keypair] [security groups] [subnet] [ADS stack name] <debug>"
    echo "Example:"
-   echo    "$0 ROTHSMITH-WINDOWS ami-066663db63b3aa675 RothsmithKeyPair sg-c6f9e6ba subnet-910521ca debug"
+   echo    "$0 ROTHSMITH-WINDOWS ami-066663db63b3aa675 RothsmithKeyPair sg-c6f9e6ba subnet-910521ca DevOps ROTHSMITH-WINDOWS drothauser@yahoo.com "\'Rothsmith Windows\'" ROTHSMITH-ADS debug"
    exit 1   
 }
 
@@ -58,14 +58,63 @@ fi
 subnet=$5
 
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# Validate EC2 profile/role name.
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+if [ -z "$6" ]
+  then
+   echo "Missing EC2 profile/role argument."
+   usage
+fi
+ec2Profile=$6
+
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# Validate name of the EC2 instance.
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+if [ -z "$7" ]
+  then
+   echo "Missing  name of the EC2 instance."
+   usage
+fi
+ec2Name=$7
+
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# Validate email address of the person owning this EC2 instance.
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+if [ -z "$8" ]
+  then
+   echo "Missing email address of the person owning this EC2 instance."
+   usage
+fi
+ec2Owner=$8
+
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# Validate description of this EC2 instance.
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+if [ -z "9" ]
+  then
+   echo "Missing description of this EC2 instance."
+   usage
+fi
+ec2Desc=$9
+
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# Validate ADS stack name.
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+if [ -z "${10}" ]
+  then
+   echo "Missing ADS stack name argument."
+   usage
+fi
+adsStackName=${10}
+
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 # Check if debug is desired
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 debug=""
-if [ "$6" == "debug" ]
+if [ "${11}" == "debug" ]
   then
-   debug=$6
+   debug=${11}
 fi
-
 
 echo "* = = = = = = = = = = = = = = = = = = = = = = = = = = = "
 echo "* Creating stack with:"
@@ -76,6 +125,11 @@ echo "*   ami_id:          $ami_id "
 echo "*   keypair:         $keypair "
 echo "*   securityGroups:  $securityGroups "
 echo "*   subnets:         $subnet "
+echo "*   EC2 Profile:     $ec2Profile "
+echo "*   EC2 Name:        $ec2Name "
+echo "*   EC2 Owner:       $ec2Owner "
+echo "*   EC2 Description: $ec2Desc "
+echo "*   ADS stack name:  $adsStackName "
 echo "*   $debug "
 echo "* = = = = = = = = = = = = = = = = = = = = = = = = = = = "
 
@@ -85,9 +139,14 @@ aws cloudformation create-stack\
  --template-body file://rothsmith-windows.yaml\
  --parameters\
     ParameterKey=AmiId,ParameterValue=${ami_id}\
-    ParameterKey=EC2KeyPair,ParameterValue=${keypair}\
+    ParameterKey=Ec2KeyPair,ParameterValue=${keypair}\
     ParameterKey=Ec2SecurityGroups,ParameterValue=${securityGroups}\
-    ParameterKey=Ec2Subnet,ParameterValue=${subnet}
+    ParameterKey=Ec2Subnet,ParameterValue=${subnet}\
+    ParameterKey=Ec2Profile,ParameterValue=${ec2Profile}\
+    ParameterKey=Ec2Name,ParameterValue=${ec2Name}\
+    ParameterKey=Ec2Owner,ParameterValue=${ec2Owner}\
+    ParameterKey=Ec2Desc,ParameterValue="${ec2Desc}"\
+    ParameterKey=AdsStackName,ParameterValue=${adsStackName}
 
 rc=$?
 
