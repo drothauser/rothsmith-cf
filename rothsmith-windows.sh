@@ -16,6 +16,7 @@ if [ $# -eq 0 ]
     usage
 fi
 stackname=$1
+template="$(echo $1 | tr '[:upper:]' '[:lower:]').yaml"
 
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 # Validate AMI ID argument.
@@ -119,7 +120,7 @@ fi
 echo "* = = = = = = = = = = = = = = = = = = = = = = = = = = = "
 echo "* Creating stack with:"
 echo "*"
-echo "*   template file:   rothsmith-windows.yaml "
+echo "*   template file:   $template"
 echo "*   stackname:       $stackname "
 echo "*   ami_id:          $ami_id "
 echo "*   keypair:         $keypair "
@@ -136,7 +137,7 @@ echo "* = = = = = = = = = = = = = = = = = = = = = = = = = = = "
 aws cloudformation create-stack\
  --$debug\
  --stack-name $stackname\
- --template-body file://rothsmith-windows.yaml\
+ --template-body file://${template}\
  --parameters\
     ParameterKey=AmiId,ParameterValue=${ami_id}\
     ParameterKey=Ec2KeyPair,ParameterValue=${keypair}\
