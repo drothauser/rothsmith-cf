@@ -1,9 +1,9 @@
 #!/bin/bash
 
 function usage() {
-   echo "Usage: $1 [stack name] [AMI ID] [keypair] [security groups] [subnet] [ADS stack name] <debug>"
+   echo "Usage: $1 [stack name] [AMI ID] [keypair] [security groups] [subnet] [ADS stack name] [ADS admin user] [ADS user password] <debug>"
    echo "Example:"
-   echo    "$0 ROTHSMITH-WINDOWS ami-066663db63b3aa675 RothsmithKeyPair sg-c6f9e6ba subnet-910521ca DevOps ROTHSMITH-WINDOWS drothauser@yahoo.com "\'Rothsmith Windows\'" ROTHSMITH-ADS debug"
+   echo    "$0 ROTHSMITH-WINDOWS ami-066663db63b3aa675 RothsmithKeyPair sg-c6f9e6ba subnet-910521ca DevOps ROTHSMITH-WINDOWS drothauser@yahoo.com "\'Rothsmith Windows\'" ROTHSMITH-ADS Administrator Password12345! debug"
    exit 1   
 }
 
@@ -109,6 +109,26 @@ fi
 adsStackName=${10}
 
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# Validate ADS Administrator User.
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+if [ -z "${11}" ]
+  then
+   echo "Missing ADS administrator user argument."
+   usage
+fi
+adsUser=${11}
+
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+# Validate ADS Administrator Password.
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+if [ -z "${12}" ]
+  then
+   echo "Missing ADS administrator password argument."
+   usage
+fi
+adsPassword=${12}
+
+# = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 # Check if debug is desired
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 debug=""
@@ -131,6 +151,8 @@ echo "*   EC2 Name:        $ec2Name "
 echo "*   EC2 Owner:       $ec2Owner "
 echo "*   EC2 Description: $ec2Desc "
 echo "*   ADS stack name:  $adsStackName "
+echo "*   ADS stack name:  $adsUser "
+echo "*   ADS stack name:  $adsPassword "
 echo "*   $debug "
 echo "* = = = = = = = = = = = = = = = = = = = = = = = = = = = "
 
@@ -139,15 +161,17 @@ aws cloudformation create-stack\
  --stack-name $stackname\
  --template-body file://${template}\
  --parameters\
-    ParameterKey=AmiId,ParameterValue=${ami_id}\
-    ParameterKey=Ec2KeyPair,ParameterValue=${keypair}\
-    ParameterKey=Ec2SecurityGroups,ParameterValue=${securityGroups}\
-    ParameterKey=Ec2Subnet,ParameterValue=${subnet}\
-    ParameterKey=Ec2Profile,ParameterValue=${ec2Profile}\
-    ParameterKey=Ec2Name,ParameterValue=${ec2Name}\
-    ParameterKey=Ec2Owner,ParameterValue=${ec2Owner}\
-    ParameterKey=Ec2Desc,ParameterValue="${ec2Desc}"\
-    ParameterKey=AdsStackName,ParameterValue=${adsStackName}
+   ParameterKey=AmiId,ParameterValue=${ami_id}\
+   ParameterKey=Ec2KeyPair,ParameterValue=${keypair}\
+   ParameterKey=Ec2SecurityGroups,ParameterValue=${securityGroups}\
+   ParameterKey=Ec2Subnet,ParameterValue=${subnet}\
+   ParameterKey=Ec2Profile,ParameterValue=${ec2Profile}\
+   ParameterKey=Ec2Name,ParameterValue=${ec2Name}\
+   ParameterKey=Ec2Owner,ParameterValue=${ec2Owner}\
+   ParameterKey=Ec2Desc,ParameterValue="${ec2Desc}"\
+   ParameterKey=AdsStackName,ParameterValue=${adsStackName}\
+   ParameterKey=AdsUser,ParameterValue=${adsUser}\
+   ParameterKey=AdsPassword,ParameterValue=${adsPassword}
 
 rc=$?
 

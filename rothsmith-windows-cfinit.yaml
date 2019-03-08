@@ -31,20 +31,14 @@ Parameters:
     Description: Description of this EC2 instance
   AdsStackName:
     Type: String
-    Default: "NCCT-ADS"
+    Default: "ROTHSMITH-ADS"
     Description: AWS Directory Service (Active Directory) stack name for importing DNS properties
-  # AdsId:
-  #   Type: String
-  #   Description: AWS Directory Service (Active Directory) Id  
-  # AdsName:
-  #   Type: String
-  #   Description: AWS Directory Service (Active Directory) Name
-  # AdsDnsPrimaryIP:
-  #   Type: String
-  #   Description: AWS Directory Service (Active Directory) primary DNS IP
-  # AdsDnsSecondaryIP:
-  #   Type: String
-  #   Description: AWS Directory Service (Active Directory) secondary DNS IP
+  AdsUser:
+    Type: String
+    Description: User ID with administrator access to the AWS Directory Service (Active Directory)   
+  AdsPassword:
+    Type: String
+    Description: AES Administrator password
 Resources:
   Ec2Instance:
     Type: AWS::EC2::Instance
@@ -72,24 +66,22 @@ Resources:
               authentication: "S3AccessCreds"  
           commands:
             1-join-domain: 
-              command: 'domjoin.bat $DomainName Administrator Password12345! $DnsPrimaryIP $DnsSecondaryIP'
-              env: 
-                  DomainName: 
-                    Fn::ImportValue: 
-                      !Sub "${AdsStackName}-Name"
-                  DnsPrimaryIP: 
-                    Fn::ImportValue: 
-                      !Sub "${AdsStackName}-DnsPrimaryIP"
-                  DnsSecondaryIP: 
-                    Fn::ImportValue: 
-                      !Sub "${AdsStackName}-DnsSecondaryIP"
+              command: !Join
+                - ' '
+                - - "domjoin.bat"
+                  - Fn::ImportValue: !Sub "${AdsStackName}-Name"
+                  - !Ref AdsUser
+                  - !Ref AdsPassword
+                  - Fn::ImportValue: !Sub "${AdsStackName}-DnsPrimaryIP"
+                  - Fn::ImportValue: !Sub "${AdsStackName}-DnsSecondaryIP"
+              waitAfterCompletion: "0"
               cwd: "C:\\Scripts"
             2-restart:
               command: 'shutdown -r -t 0'
-              #command: 'powershell.exe -Command Restart-Computer'
               waitAfterCompletion: "forever"
             3-signal-success:
               command: !Sub 'cfn-signal.exe -e 0 --stack ${AWS::StackName} --resource Ec2Instance --region ${AWS::Region}'
+              waitAfterCompletion: "0"
     Properties:
       BlockDeviceMappings:
         -
@@ -116,3 +108,7 @@ Resources:
             <script>             
               C:\PROGRA~1\Amazon\cfn-bootstrap\cfn-init.exe -v -s ${AWS::StackName} -r Ec2Instance --region=${AWS::Region}
             </script>
+    CreationPolicy:
+      ResourceSignal:
+          Count: '1'
+          Timeout: PT5M
