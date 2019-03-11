@@ -1,9 +1,9 @@
 #!/bin/bash
 
 function usage() {
-   echo "Usage: $1 [stack name] [AMI ID] [keypair] [security groups] [subnet] [ADS stack name] [ADS admin user] [ADS user password] <debug>"
+   echo "Usage: ${0} [stack name] [AMI ID] [keypair] [security groups] [subnet] [ADS stack name] [ADS admin user] [ADS user password] <debug>"
    echo "Example:"
-   echo    "$0 ROTHSMITH-WINDOWS ami-066663db63b3aa675 RothsmithKeyPair sg-c6f9e6ba subnet-910521ca DevOps ROTHSMITH-WINDOWS drothauser@yahoo.com "\'Rothsmith Windows\'" ROTHSMITH-ADS Administrator Password12345! debug"
+   echo    "${0} ROTHSMITH-WINDOWS ami-066663db63b3aa675 RothsmithKeyPair sg-c6f9e6ba subnet-910521ca DevOps ROTHSMITH-WINDOWS drothauser@yahoo.com "\'Rothsmith Windows\'" ROTHSMITH-ADS Administrator Password12345! debug"
    exit 1   
 }
 
@@ -15,78 +15,78 @@ if [ $# -eq 0 ]
     echo "You must supply a stack name argument!"
     usage
 fi
-stackname=$1
-template="$(echo $1 | tr '[:upper:]' '[:lower:]').yaml"
+stackname=${1}
+template="$(echo ${1} | tr '[:upper:]' '[:lower:]' | sed  's/^.*\-rothsmith/rothsmith/g').yaml"
 
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 # Validate AMI ID argument.
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-if [ -z "$2" ]
+if [ -z "${2}" ]
   then
    echo "Missing AMI ID argument."
    usage
 fi
-ami_id=$2
+ami_id=${2}
 
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 # Validate key pair name argument.
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-if [ -z "$3" ]
+if [ -z "${3}" ]
   then
    echo "Missing keypair argument."
    usage
 fi
-keypair=$3
+keypair=${3}
 
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 # Validate security groups argument.
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-if [ -z "$4" ]
+if [ -z "${4}" ]
   then
    echo "Missing security groups argument."
    usage
 fi
-securityGroups=$4
+securityGroups=${4}
 
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 # Validate subnet groups argument.
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-if [ -z "$5" ]
+if [ -z "${5}" ]
   then
    echo "Missing subnet argument."
    usage
 fi
-subnet=$5
+subnet=${5}
 
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 # Validate EC2 profile/role name.
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-if [ -z "$6" ]
+if [ -z "${6}" ]
   then
    echo "Missing EC2 profile/role argument."
    usage
 fi
-ec2Profile=$6
+ec2Profile=${6}
 
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 # Validate name of the EC2 instance.
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-if [ -z "$7" ]
+if [ -z "${7}" ]
   then
    echo "Missing  name of the EC2 instance."
    usage
 fi
-ec2Name=$7
+ec2Name=${7}
 
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 # Validate email address of the person owning this EC2 instance.
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-if [ -z "$8" ]
+if [ -z "${8}" ]
   then
    echo "Missing email address of the person owning this EC2 instance."
    usage
 fi
-ec2Owner=$8
+ec2Owner=${8}
 
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 # Validate description of this EC2 instance.
@@ -96,7 +96,7 @@ if [ -z "9" ]
    echo "Missing description of this EC2 instance."
    usage
 fi
-ec2Desc=$9
+ec2Desc=${9}
 
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 # Validate ADS stack name.

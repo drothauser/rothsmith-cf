@@ -38,7 +38,7 @@ Parameters:
     Description: User ID with administrator access to the AWS Directory Service (Active Directory)   
   AdsPassword:
     Type: String
-    Description: AES Administrator password
+    Description: ADS Administrator password
 Resources:
   Ec2Instance:
     Type: AWS::EC2::Instance
