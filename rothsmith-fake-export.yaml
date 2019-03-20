@@ -1,0 +1,69 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Fake Linux instance solely for exporting AWS Directory Service (ADS) variables because GovCloud doesn't allow CF for ADS.
+Parameters:
+  AmiId:
+    Type: String
+    Default: ami-c281efa3
+    Description: Linux Amazon Machine Image ID
+  Ec2Subnet:
+    Type: AWS::EC2::Subnet::Id
+    Default: subnet-9c37edf8
+    Description: EC2 Instance Subnet
+  Ec2SecurityGroups:
+    Type: 'List<AWS::EC2::SecurityGroup::Id>'
+    Default: sg-b5dc32d1
+    Description: Security Groups for EC2 instance 
+  Ec2KeyPair: 
+    Type: String
+    Description: Provides the name of the Amazon EC2 key pair
+  Ec2Profile: 
+    Type: String
+    Default: DevOps
+    Description: The profile/role for this EC2 instance
+  Ec2Name:
+    Type: String
+    Description: Name of the EC2 instance
+  Ec2Owner:
+    Type: String
+    Description: Email address of the person owning this EC2 instance
+  Ec2Desc:
+    Type: String
+    Description: Description of this EC2 instance  
+Resources:
+  Ec2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      IamInstanceProfile: !Ref Ec2Profile
+      InstanceType: t2.nano
+      ImageId: !Ref AmiId
+      KeyName: !Ref Ec2KeyPair
+      SecurityGroupIds: !Ref Ec2SecurityGroups
+      SubnetId: !Ref Ec2Subnet
+      Tags:
+        - Key: Name
+          Value: !Ref Ec2Name
+        - Key: Owner
+          Value: !Ref Ec2Owner
+        - Key: Description
+          Value: !Ref Ec2Desc
+Outputs:
+  DirectoryId:
+    Description: Directory ID
+    Value: "d-9867329b13"
+    Export:
+      Name: !Sub ${AWS::StackName}-Id
+  DirectoryName:
+    Description: Directory ID
+    Value: "ncct.gov"
+    Export:
+      Name: !Sub ${AWS::StackName}-Name
+  DnsPrimaryIP:
+    Description: The IP address of the directory's primary DNS server
+    Value: "10.205.165.141"
+    Export:
+      Name: !Sub ${AWS::StackName}-DnsPrimaryIP
+  DnsSecondaryIP:
+    Description: The IP address of the directory's secondary DNS server
+    Value: "10.205.165.60"
+    Export:
+      Name: !Sub ${AWS::StackName}-DnsSecondaryIP
