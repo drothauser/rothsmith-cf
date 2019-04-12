@@ -33,7 +33,7 @@ Resources:
         VpcId: 
           Ref: VpcId
 Outputs:
-  DirectoryID:
+  DirectoryId:
     Description: Directory ID
     Value: !Ref RothsmithDirectory
     Export:

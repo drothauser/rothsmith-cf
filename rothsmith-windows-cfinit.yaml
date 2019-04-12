@@ -1,0 +1,114 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Windows Server Template
+Parameters:
+  AmiId:
+    Type: String
+    Default: ami-69099208
+    Description: Amazon Machine Image ID
+  Ec2Subnet:
+    Type: AWS::EC2::Subnet::Id
+    Default: subnet-9c37edf8
+    Description: EC2 Instance Subnet
+  Ec2SecurityGroups:
+    Type: 'List<AWS::EC2::SecurityGroup::Id>'
+    Default: sg-b5dc32d1
+    Description: Security Groups for EC2 instance 
+  Ec2KeyPair: 
+    Type: String
+    Description: Provides the name of the Amazon EC2 key pair
+  Ec2Profile: 
+    Type: String
+    Default: DevOps
+    Description: The profile/role for this EC2 instance
+  Ec2Name:
+    Type: String
+    Description: Name of the EC2 instance
+  Ec2Owner:
+    Type: String
+    Description: Email address of the person owning this EC2 instance
+  Ec2Desc:
+    Type: String
+    Description: Description of this EC2 instance
+  AdsStackName:
+    Type: String
+    Default: "ROTHSMITH-ADS"
+    Description: AWS Directory Service (Active Directory) stack name for importing DNS properties
+  AdsUser:
+    Type: String
+    Description: User ID with administrator access to the AWS Directory Service (Active Directory)   
+  AdsPassword:
+    Type: String
+    Description: ADS Administrator password
+Resources:
+  Ec2Instance:
+    Type: AWS::EC2::Instance
+    Metadata: 
+      AWS::CloudFormation::Authentication:  
+        S3AccessCreds:  
+            type: "S3"  
+            roleName: !Ref Ec2Profile  
+            buckets:  
+                - "rothsmith-scripts"
+      AWS::CloudFormation::Init:     
+        config: 
+          packages:
+            msi: 
+              "urlrewrite" : "https://s3.amazonaws.com/aws-cli/AWSCLI64PY3.msi"
+          files:
+            C:\ADExplorer.exe: 
+              source: "https://s3.amazonaws.com/rothsmith-software/ADExplorer.exe"                         
+              authentication: "S3AccessCreds"    
+            C:\Scripts\domjoin.bat: 
+              source: "https://s3.amazonaws.com/rothsmith-scripts/domjoin.bat"                         
+              authentication: "S3AccessCreds"    
+            C:\Scripts\domdns.bat: 
+              source: "https://s3.amazonaws.com/rothsmith-scripts/domdns.bat"                         
+              authentication: "S3AccessCreds"  
+          commands:
+            1-join-domain: 
+              command: !Join
+                - ' '
+                - - "domjoin.bat"
+                  - Fn::ImportValue: !Sub "${AdsStackName}-Name"
+                  - !Ref AdsUser
+                  - !Ref AdsPassword
+                  - Fn::ImportValue: !Sub "${AdsStackName}-DnsPrimaryIP"
+                  - Fn::ImportValue: !Sub "${AdsStackName}-DnsSecondaryIP"
+              waitAfterCompletion: "0"
+              cwd: "C:\\Scripts"
+            2-restart:
+              command: 'shutdown -r -t 0'
+              waitAfterCompletion: "forever"
+            3-signal-success:
+              command: !Sub 'cfn-signal.exe -e 0 --stack ${AWS::StackName} --resource Ec2Instance --region ${AWS::Region}'
+              waitAfterCompletion: "0"
+    Properties:
+      BlockDeviceMappings:
+        -
+          DeviceName: "/dev/sda1"
+          Ebs:
+            VolumeSize: 40
+            VolumeType: gp2
+      IamInstanceProfile: !Ref Ec2Profile
+      InstanceType: t2.micro
+      ImageId: !Ref AmiId
+      KeyName: !Ref Ec2KeyPair
+      SecurityGroupIds: !Ref Ec2SecurityGroups
+      SubnetId: !Ref Ec2Subnet
+      Tags:
+        - Key: Name
+          Value: !Ref Ec2Name
+        - Key: Owner
+          Value: !Ref Ec2Owner
+        - Key: Description
+          Value: !Ref Ec2Desc
+      UserData:
+        "Fn::Base64":
+          !Sub |
+            <script>             
+              C:\PROGRA~1\Amazon\cfn-bootstrap\cfn-init.exe -v -s ${AWS::StackName} -r Ec2Instance --region=${AWS::Region}
+            </script>
+    CreationPolicy:
+      ResourceSignal:
+          Count: '1'
+          Timeout: PT5M
