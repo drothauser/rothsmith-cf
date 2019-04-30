@@ -1,0 +1,10 @@
+Host jumphost
+   HostName 52.23.182.24
+   User ec2-user
+   IdentityFile ~/.ssh/RothsmithKeyPair.pem
+   ProxyCommand none
+Host securehost
+   HostName 10.10.30.246
+   User ec2-user 
+   IdentityFile ~/.ssh/RothsmithKeyPair.pem
+   ProxyCommand ssh jumphost -W %h:%p
