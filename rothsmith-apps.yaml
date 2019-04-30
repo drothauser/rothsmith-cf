@@ -29,7 +29,7 @@ Mappings:
       elbPort: '80'
       ec2Port: '80'      
       scaling: "1,1,1"
-      type: "t2.micro"
+      type: "t2.small"
       name: Apache Web Server
       owner: drothauser@yahoo.com
       description: DMZ Apache Web Server
@@ -39,8 +39,9 @@ Mappings:
       ami: "ami-07c8b576e965e389e"      
       ec2Port: '8080'
       elbPort: '8080'
-      scaling: "1,3,2"
-      type: "t2.micro"
+      #scaling: "1,3,2"
+      scaling: "1,1,1"
+      type: "t2.medium"
       name: Tomcat Server
       owner: drothauser@yahoo.com
       description: Tomcat Server
@@ -51,7 +52,7 @@ Mappings:
       elbPort: '80'
       ec2Port: '8081'      
       scaling: "1,1,1"
-      type: "t2.micro"
+      type: "t2.small"
       name: Nexus Server
       owner: drothauser@yahoo.com
       description: Nexus Repository Manager
