@@ -21,6 +21,11 @@ aws cloudformation create-stack^
     ParameterKey=KeyPairName,ParameterValue=^"RothsmithKeyPair^"  
 
 set RC=%ERRORLEVEL%
+if "%RC%" NEQ "0" goto finish
+
+aws cloudformation wait stack-create-complete --stack-name ROTHSMITH-VPC
+set RC=%ERRORLEVEL%
+
 goto finish
 
 :syntax
