@@ -117,7 +117,7 @@ Resources:
     Properties:
       Port: !Ref Ec2Port
       Protocol: HTTP
-      HealthCheckIntervalSeconds: 10
+      HealthCheckIntervalSeconds: 20
       HealthCheckTimeoutSeconds: 5
       UnhealthyThresholdCount: 5
       HealthCheckPath: "/"
@@ -154,7 +154,7 @@ Resources:
     Properties:
       LaunchConfigurationName: !Ref LaunchConfiguration
       DesiredCapacity: !Select [ "2", !Ref Scaling ]
-      HealthCheckGracePeriod: 300
+      HealthCheckGracePeriod: 420
       #LoadBalancerNames:
       #- Ref: LoadBalancer
       TargetGroupARNs: 

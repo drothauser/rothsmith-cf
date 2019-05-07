@@ -91,7 +91,7 @@ ec2Owner=${8}
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 # Validate description of this EC2 instance.
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
-if [ -z "9" ]
+if [ -z "${9}" ]
   then
    echo "Missing description of this EC2 instance."
    usage
