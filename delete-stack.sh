@@ -4,4 +4,12 @@ if [ $# -eq 0 ]
     echo "You must supply a stack name argument!"
     exit 1
 fi
-aws cloudformation delete-stack --stack-name $1
+
+stackName="$1"
+
+if aws cloudformation delete-stack --stack-name $stackName
+then
+   echo "Deleting $stackName Stack..."
+   aws cloudformation wait stack-delete-complete --stack-name $stackName
+   echo "$stackName stack has been deleted."
+fi

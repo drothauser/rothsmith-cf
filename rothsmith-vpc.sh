@@ -15,23 +15,30 @@ if [ "$1" = "--help" ]; then
    syntax
 fi
 
+stackName="ROTHSMITH-VPC"
+
 TEMPLATE_URL="https://s3.amazonaws.com/rothsmith-cloudformation/rothsmith-vpc.yaml"
 if [ "$1" = "--file" ]; then
    TEMPLATE_URL="file://rothsmith-vpc.yaml"   
 fi
 
-aws cloudformation create-stack\
+if aws cloudformation create-stack\
  --capabilities CAPABILITY_IAM \
  --disable-rollback \
- --stack-name ROTHSMITH-VPC\
+ --stack-name $stackName\
  --template-body $TEMPLATE_URL \
  --parameters\
     ParameterKey=KeyPairName,ParameterValue=\"RothsmithKeyPair\"  
+then
+   echo "Creating $stackName Stack..."
+   aws cloudformation wait stack-create-complete --stack-name $stackName
+   echo "$stackName stack has been created."
+fi
 
 RC=$?
 
 echo
 echo "***********************************************************************"
-echo "* Stack launch submitted to AWS. RC = $RC"
+echo "* $0 completed. RC = $RC"
 echo "***********************************************************************"
 exit $RC

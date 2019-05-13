@@ -14,11 +14,26 @@ fi
 # ParameterKey=ELBSubnets,ParameterValue=\"subnet-09cd0870f808f2677\\,subnet-0386c83240089af69\" \templateBodyUrl
 # --debug\
 
-aws cloudformation create-stack\
+stackName="ROTHSMITH-APPS"
+
+if aws cloudformation create-stack\
  --capabilities CAPABILITY_IAM \
  --disable-rollback \
- --stack-name ROTHSMITH-APPS\
+ --stack-name $stackName \
  --template-body ${templateBodyUrl}\
  --parameters\
     ParameterKey=VPCStack,ParameterValue=\"ROTHSMITH-VPC\" \
     ParameterKey=S3Bucket,ParameterValue=\"rothsmith-cloudformation\" 
+then
+   echo "Creating $stackName Stack..."
+   aws cloudformation wait stack-create-complete --stack-name $stackName
+   echo "$stackName stack has been created."
+fi
+
+RC=$?
+
+echo
+echo "***********************************************************************"
+echo "* $0 completed. RC = $RC"
+echo "***********************************************************************"
+exit $RC
