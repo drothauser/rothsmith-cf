@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Windows Server Template
+Parameters:
+  AmiId:
+    Type: String
+    Default: ami-0de53d8956e8dcf80
+    Description: Amazon Machine Image ID
+  Ec2Subnet:
+    Type: AWS::EC2::Subnet::Id
+    Default: subnet-5d163f70
+    Description: EC2 Instance Subnet
+  Ec2SecurityGroups:
+    Type: 'List<AWS::EC2::SecurityGroup::Id>'
+    Default: linux-sg
+    Description: Security Groups for EC2 instance 
+  EC2KeyPair: 
+    Type: String
+    Default: RothsmithKeyPair
+    Description: Provides the name of the Amazon EC2 key pair
+  EC2Profile: 
+    Type: String
+    Default: DevOps
+    Description: The profile/role for this EC2 instance
+Resources:
+  Ec2Instance:
+    Type: AWS::EC2::Instance
+    Metadata: 
+      AWS::CloudFormation::Authentication:  
+        S3AccessCreds:  
+            type: "S3"  
+            roleName: !Ref EC2Profile  
+            buckets:  
+                - "rothsmith-scripts"
+      AWS::CloudFormation::Init: 
+        configSets:
+          ascending: 
+            - "config1"
+            - "config2"
+        config1:
+          commands:               
+            1-jenkins-wget: 
+              command: 'wget -O /etc/yum.repos.d/jenkins.repo'
+        config2: 
+          packages:
+            rpm:
+              jenkins: "https://pkg.jenkins.io/redhat/jenkins.io.key"
+            yum: 
+              java-1.8.0-openjdk: []    
+              jenkins: []
+          services: 
+            sysvinit: 
+              jenkins: 
+                enabled: "true"
+                ensureRunning: "true"
+    Properties:
+      IamInstanceProfile: !Ref EC2Profile
+      InstanceType: t2.micro
+      ImageId: !Ref AmiId
+      KeyName: !Ref EC2KeyPair
+      #NetworkInterfaces: 
+      #  - AssociatePublicIpAddress: "true"
+      #    DeviceIndex: "0"
+      #    GroupSet: !Ref Ec2SecurityGroups
+      #    SubnetId: !Ref Ec2Subnet
+      SecurityGroupIds: !Ref Ec2SecurityGroups
+      SubnetId: !Ref Ec2Subnet
+      Tags:
+        - Key: Name
+          Value: Linux Server
+      UserData:
+        "Fn::Base64":
+          !Sub |
+          #!/bin/bash
+          /opt/aws/bin/cfn-init -v -c ascending -s ${AWS::StackName} -r Ec2Instance --region=${AWS::Region}
+          
