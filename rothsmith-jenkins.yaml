@@ -39,7 +39,7 @@ Resources:
         config1:
           commands:               
             1-jenkins-wget: 
-              command: 'wget -O /etc/yum.repos.d/jenkins.repo'
+              command: 'wget -O /etc/yum.repos.d/jenkins.repo http://pkg.jenkins-ci.org/redhat/jenkins.repo'
         config2: 
           packages:
             rpm:
