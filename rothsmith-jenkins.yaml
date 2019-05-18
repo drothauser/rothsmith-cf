@@ -7,11 +7,11 @@ Parameters:
     Description: Amazon Machine Image ID
   Ec2Subnet:
     Type: AWS::EC2::Subnet::Id
-    Default: subnet-5d163f70
+    Default: subnet-910521ca
     Description: EC2 Instance Subnet
   Ec2SecurityGroups:
     Type: 'List<AWS::EC2::SecurityGroup::Id>'
-    Default: linux-sg
+    Default: sg-02fed26b75d2bc6fd,sg-0985ed0c55346cbba
     Description: Security Groups for EC2 instance 
   EC2KeyPair: 
     Type: String
@@ -39,7 +39,7 @@ Resources:
         config1:
           commands:               
             1-jenkins-wget: 
-              command: 'wget -O /etc/yum.repos.d/jenkins.repo http://pkg.jenkins-ci.org/redhat/jenkins.repo'
+              command: 'wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat/jenkins.repo'
         config2: 
           packages:
             rpm:
