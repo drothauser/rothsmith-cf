@@ -40,10 +40,10 @@ Resources:
           commands:               
             1-jenkins-wget: 
               command: 'wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat/jenkins.repo'
-        config2: 
-          packages:
-            rpm:
-              jenkins: "https://pkg.jenkins.io/redhat/jenkins.io.key"
+            2-jenkins-rpm-import:
+              command: 'rpm --import https://pkg.jenkins.io/redhat/jenkins.io.key'
+        config2:
+          packages: 
             yum: 
               java-1.8.0-openjdk: []    
               jenkins: []
