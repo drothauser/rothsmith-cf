@@ -1,11 +1,11 @@
 @echo off
 setlocal
 
-call ./delete-stack.sh ROTHSMITH-APPS
+call delete-stack.bat ROTHSMITH-APPS
 set RC=%ERRORLEVEL%
 if "%RC%" NEQ "0" goto finish
 
-call ./delete-stack.sh ROTHSMITH-VPC
+call delete-stack.bat ROTHSMITH-VPC
 
 set RC=%ERRORLEVEL%
 

@@ -13,6 +13,10 @@ set STACKNAME=%1
 
 aws cloudformation delete-stack --stack-name %STACKNAME%
 set RC=%ERRORLEVEL%
+
+if "%RC%" NEQ "0" goto finish
+aws cloudformation wait stack-create-complete --stack-name %STACKNAME%
+
 goto finish
 
 :syntax
