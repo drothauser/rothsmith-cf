@@ -26,8 +26,12 @@ if aws cloudformation create-stack\
     ParameterKey=S3Bucket,ParameterValue=\"rothsmith-cloudformation\" 
 then
    echo "Creating $stackName Stack..."
-   aws cloudformation wait stack-create-complete --stack-name $stackName
-   echo "$stackName stack has been created."
+   if aws cloudformation wait stack-create-complete --stack-name $stackName
+   then
+      echo "$stackName stack has been created."
+      echo "Updating nexus.rothsmith.net Route 53 record set alias target with ELB host"
+      ./nexus-route53.sh
+   fi
 fi
 
 RC=$?
