@@ -48,7 +48,7 @@ Mappings:
       svcCode: tomcat
       elbTier: private
     nexus: 
-      ami: "ami-0b6f97817bd60cd5c"      
+      ami: "ami-0155531054506e711"      
       elbPort: '80'
       ec2Port: '8081'      
       scaling: "1,1,1"

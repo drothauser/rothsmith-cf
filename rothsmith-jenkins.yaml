@@ -47,6 +47,8 @@ Resources:
             yum: 
               java-1.8.0-openjdk: []    
               jenkins: []
+              git: []
+              maven: []
           services: 
             sysvinit: 
               jenkins: 
