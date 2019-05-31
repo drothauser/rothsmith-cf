@@ -154,7 +154,7 @@ Resources:
     Properties:
       LaunchConfigurationName: !Ref LaunchConfiguration
       DesiredCapacity: !Select [ "2", !Ref Scaling ]
-      HealthCheckGracePeriod: 420
+      HealthCheckGracePeriod: 600
       #LoadBalancerNames:
       #- Ref: LoadBalancer
       TargetGroupARNs: 
