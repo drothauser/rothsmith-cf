@@ -1,0 +1,179 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Rothsmith DevOps - Nexus, Jenkins
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: Rothsmith DevOps Configuration Parameters
+      Parameters:
+      - VPCStack
+      - S3Bucket
+    ParameterLabels:
+      VPCStack:
+        default: Enter the stack name used to create the VPC.  
+      S3Bucket:
+        default: Enter S3 bucket name that stores the CloudFormation templates
+Parameters:
+  VPCStack:
+    Type: String
+    Default: 'ROTHSMITH-VPC'
+    Description: The VPC stack to obtain exported values from
+  S3Bucket:
+    Type: String
+    Default: rothsmith-cloudformation
+    Description: The S3 bucket containing CloudFormation templates
+Mappings:
+  ServerMap: 
+    nexus: 
+      ami: "ami-0155531054506e711"      
+      elbPort: '80'
+      ec2Port: '8081'      
+      scaling: "1,1,1"
+      type: "t2.small"
+      name: Nexus Server
+      owner: drothauser@yahoo.com
+      description: Nexus Repository Manager
+      svcCode: nexus
+      elbTier: public
+    jenkins: 
+      ami: "ami-0990d45c8a2d70703"      
+      elbPort: '80'
+      ec2Port: '8080'
+      scaling: "1,1,1"
+      type: "t2.small"
+      name: Jenkins Server
+      owner: drothauser@yahoo.com
+      description: Jenkins Continuous Integration
+      svcCode: jenkins
+      elbTier: public
+Resources:
+  S3AccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+  S3RolePolicies:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: s3access
+      PolicyDocument:
+        Statement:
+        - Effect: Allow
+          Action: s3:*
+          Resource: "*"
+      Roles:
+      - Ref: S3AccessRole
+  S3InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+      - Ref: S3AccessRole
+  Nexus:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.amazonaws.com/'
+          - !Ref S3Bucket
+          - '/rothsmith-service.yaml'
+      Parameters:
+        ElbSNs: !Join
+          - ','
+          - - 'Fn::ImportValue': 
+                !Sub '${VPCStack}-PublicSubnet1'
+            - 'Fn::ImportValue': 
+                !Sub '${VPCStack}-PublicSubnet2'
+        ElbSGs: 
+          'Fn::ImportValue': 
+            !Sub '${VPCStack}-PublicInstanceSG'
+        Ec2SNs: !Join
+          - ','
+          - - 'Fn::ImportValue': 
+                !Sub '${VPCStack}-PrivateSubnet1'
+            - 'Fn::ImportValue': 
+                !Sub '${VPCStack}-PrivateSubnet2'
+        Ec2SGs:  
+          'Fn::ImportValue': 
+            !Sub '${VPCStack}-PrivateSubnetInstanceSG'
+        AmiId: !FindInMap [ServerMap, nexus, ami]
+        ElbPort: !FindInMap [ServerMap, nexus, elbPort]
+        Ec2Port: !FindInMap [ServerMap, nexus, ec2Port]
+        Ec2Role: !Ref S3InstanceProfile
+        Ec2Type: !FindInMap [ServerMap, nexus, type]
+        Ec2Name: !FindInMap [ServerMap, nexus, name]
+        Ec2Owner: !FindInMap [ServerMap, nexus, owner]
+        Ec2Desc: !FindInMap [ServerMap, nexus, description]        
+        ElbTier: !FindInMap [ServerMap, nexus, elbTier] 
+        Scaling: !FindInMap [ServerMap, nexus, scaling]  
+        SvcCode: !FindInMap [ServerMap, nexus, svcCode]  
+        ElbDnsKVPs: " " # Only needed for webProxy web proxy tier
+        VpcId: 
+          'Fn::ImportValue': 
+            !Sub '${VPCStack}-VPCID'
+  Jenkins:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.amazonaws.com/'
+          - !Ref S3Bucket
+          - '/rothsmith-service.yaml'
+      Parameters:
+        ElbSNs: !Join
+          - ','
+          - - 'Fn::ImportValue': 
+                !Sub '${VPCStack}-PublicSubnet1'
+            - 'Fn::ImportValue': 
+                !Sub '${VPCStack}-PublicSubnet2'
+        ElbSGs: 
+          'Fn::ImportValue': 
+            !Sub '${VPCStack}-PublicInstanceSG'
+        Ec2SNs: !Join
+          - ','
+          - - 'Fn::ImportValue': 
+                !Sub '${VPCStack}-PrivateSubnet1'
+            - 'Fn::ImportValue': 
+                !Sub '${VPCStack}-PrivateSubnet2'
+        Ec2SGs:  
+          'Fn::ImportValue': 
+            !Sub '${VPCStack}-PrivateSubnetInstanceSG'
+        AmiId: !FindInMap [ServerMap, jenkins, ami]
+        ElbPort: !FindInMap [ServerMap, jenkins, elbPort]
+        Ec2Port: !FindInMap [ServerMap, jenkins, ec2Port]
+        Ec2Role: !Ref S3InstanceProfile
+        Ec2Type: !FindInMap [ServerMap, jenkins, type]
+        Ec2Name: !FindInMap [ServerMap, jenkins, name]
+        Ec2Owner: !FindInMap [ServerMap, jenkins, owner]
+        Ec2Desc: !FindInMap [ServerMap, jenkins, description]        
+        ElbTier: !FindInMap [ServerMap, jenkins, elbTier] 
+        Scaling: !FindInMap [ServerMap, jenkins, scaling]  
+        SvcCode: !FindInMap [ServerMap, jenkins, svcCode]  
+        ElbDnsKVPs: " " # Only needed for webProxy web proxy tier
+        VpcId: 
+          'Fn::ImportValue': 
+            !Sub '${VPCStack}-VPCID'
+Outputs:
+  NexusURL:
+    Description: Nexus URL
+    Value: !Join ['', ['http://', !GetAtt [Nexus, Outputs.ElbDnsName],':',!FindInMap [ServerMap, nexus, elbPort]]]      
+  NexusDNS:
+    Description: Nexus URL
+    Value: !GetAtt [Nexus, Outputs.ElbDnsName]
+    Export:
+      Name: !Sub "${AWS::StackName}-NexusDNS"
+  JenkinsURL:
+    Description: Jenkins URL
+    Value: !Join ['', ['http://', !GetAtt [Jenkins, Outputs.ElbDnsName],':',!FindInMap [ServerMap, jenkins, elbPort]]]      
+  JenkinsDNS:
+    Description: Jenkins URL
+    Value: !GetAtt [Jenkins, Outputs.ElbDnsName]
+    Export:
+      Name: !Sub "${AWS::StackName}-JenkinsDNS"
