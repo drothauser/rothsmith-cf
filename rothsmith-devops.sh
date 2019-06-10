@@ -28,6 +28,8 @@ then
       echo "$stackName stack has been created."
       echo "Updating nexus.rothsmith.net Route 53 record set alias target with ELB host"
       ./nexus-route53.sh
+      echo "Updating jenkins.rothsmith.net Route 53 record set alias target with ELB host"
+      ./jenkins-route53.sh
    fi
 fi
 
