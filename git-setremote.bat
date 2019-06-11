@@ -1,0 +1,1 @@
+git remote set-url origin ssh://git@github.com/drothauser/rothsmith-parent.git
