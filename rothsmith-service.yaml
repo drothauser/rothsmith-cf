@@ -57,6 +57,12 @@ Parameters:
   VpcId:
     Type: String
     Description: The VPC Id
+  HealthCheckType:
+    Type: String
+    Default: ELB
+    AllowedValues:
+      - EC2
+      - ELB
 Mappings:
   TierMap:
     public:
@@ -162,7 +168,7 @@ Resources:
       MinSize: !Select [ "0", !Ref Scaling ]
       MaxSize: !Select [ "1", !Ref Scaling ]
       VPCZoneIdentifier: !Ref Ec2SNs
-      HealthCheckType: "ELB"
+      HealthCheckType: !Ref HealthCheckType
       Tags:
         - Key: Name
           Value: !Ref Ec2Name

@@ -35,6 +35,7 @@ Mappings:
       description: Nexus Repository Manager
       svcCode: nexus
       elbTier: public
+      healthCheckType: ELB
     jenkins: 
       ami: "ami-0b1a19a6059ecb183"      
       elbPort: '80'
@@ -46,6 +47,7 @@ Mappings:
       description: Jenkins Continuous Integration
       svcCode: jenkins
       elbTier: public
+      healthCheckType: EC2
 Resources:
   S3AccessRole:
     Type: AWS::IAM::Role
@@ -118,6 +120,7 @@ Resources:
         VpcId: 
           'Fn::ImportValue': 
             !Sub '${VPCStack}-VPCID'
+        HealthCheckType: !FindInMap [ServerMap, nexus, healthCheckType]
   Jenkins:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -160,6 +163,7 @@ Resources:
         VpcId: 
           'Fn::ImportValue': 
             !Sub '${VPCStack}-VPCID'
+        HealthCheckType: !FindInMap [ServerMap, jenkins, healthCheckType]
 Outputs:
   NexusURL:
     Description: Nexus URL
