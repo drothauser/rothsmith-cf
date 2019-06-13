@@ -36,7 +36,7 @@ Mappings:
       svcCode: nexus
       elbTier: public
     jenkins: 
-      ami: "ami-0990d45c8a2d70703"      
+      ami: "ami-0dca4673571529df2"      
       elbPort: '80'
       ec2Port: '8080'
       scaling: "1,1,1"
