@@ -12,16 +12,34 @@ if "%1"=="--file" (
    set TEMPLATE_URL="file://rothsmith-nexus.yaml"   
 )
 
+set stackName=ROTHSMITH-NEXUS
+
 aws cloudformation create-stack^
  --capabilities CAPABILITY_IAM ^
  --disable-rollback ^
- --stack-name ROTHSMITH-NEXUS^
+ --stack-name %stackName%^
  --template-url %TEMPLATE_URL% ^
  --parameters^
     ParameterKey=VPCStack,ParameterValue=^"ROTHSMITH-VPC^" ^
     ParameterKey=S3Bucket,ParameterValue=^"rothsmith-cloudformation^" 
 
 set RC=%ERRORLEVEL%
+
+if %RC% NEQ 0 (
+   goto finish
+)
+
+echo "Creating %stackName% Stack..."
+aws cloudformation wait stack-create-complete --stack-name %stackName%
+
+if %RC% NEQ 0 (
+   goto finish
+)
+
+echo "%stackName% stack has been created."
+echo "Updating nexus.rothsmith.net Route 53 record set alias target with ELB host"
+call nexus-route53.bat
+
 goto finish
 
 :syntax

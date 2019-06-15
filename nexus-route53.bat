@@ -1,19 +1,23 @@
 @echo off
-setlocal
+setlocal enabledelayedexpansion
 
-REM nexusZone=$(aws route53 list-hosted-zones-by-name --dns-name "nexus.rothsmith.net" --max-items 1 | grep '"Id"' | sed "s/^.*\/\(.*\)\"\,/\1/g")
-set zoneCmd='aws route53 list-hosted-zones-by-name --dns-name ^"nexus.rothsmith.net^" --max-items 1 | findstr ^"\^"Id\^":^"'
-FOR /F "tokens=* USEBACKQ" %%F IN (`%zoneCmd%`) DO (
-   SET var=%%F
+for /F "tokens=3 delims=/," %%i in ('aws route53 list-hosted-zones-by-name --dns-name ^"nexus.rothsmith.net^" --max-items 1 ^| findstr ^"\^"Id\^":^"') do (
+   set nexusZoneTmp=%%i
+   set nexusZone=!nexusZoneTmp:"=!
 )
-ECHO %var%
+echo Nexus Zone = %nexusZone%
 
-REM nexusElb=$(aws elbv2 describe-load-balancers | grep -i nexus | grep DNSName | awk '{print $2}' | sed 's/[\"\,]//g')
+for /F "tokens=2 delims=:," %%i in ('aws elbv2 describe-load-balancers ^| findstr -i nexus ^| findstr DNSName') do (
+   set nexusElbTmp=%%i
+   set nexusElb=!nexusElbTmp:"=!
+   set nexusElb=!nexusElb: =!
+)
+echo Nexus ELB = %nexusElb%
 
-REM echo "****** ${nexusElb} *****"
+set /P nexusJsonRaw=<./nexus-route53.json
 
-set /P nexusJson=<./nexus-route53.json
+set nexusJson=!nexusJsonRaw:XXXXXXX=%nexusElb%!
+echo Route53 JSON = !nexusJson!
+echo !nexusJson! > %TEMP%\nexusRoute53.json
 
-REM nexusJson=$(cat ./nexus-route53.json | sed "s/XXXXXXX/${nexusElb}/")
-
-REM aws route53 change-resource-record-sets --hosted-zone-id $nexusZone --change-batch "%nexusJson%"
+aws route53 change-resource-record-sets --hosted-zone-id %nexusZone% --change-batch file://%TEMP%\nexusRoute53.json

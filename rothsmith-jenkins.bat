@@ -7,12 +7,12 @@ setlocal
 if "%1"=="--help" (
    goto syntax
 )
-set TEMPLATE_URL="https://s3.amazonaws.com/rothsmith-cloudformation/rothsmith-devops.yaml"
+set TEMPLATE_URL="https://s3.amazonaws.com/rothsmith-cloudformation/rothsmith-jenkins.yaml"
 if "%1"=="--file" (
-   set TEMPLATE_URL="file://rothsmith-devops.yaml"   
+   set TEMPLATE_URL="file://rothsmith-jenkins.yaml"   
 )
 
-set stackName=ROTHSMITH-DEVOPS
+set stackName=ROTHSMITH-JENKINS
 
 aws cloudformation create-stack^
  --capabilities CAPABILITY_IAM ^
@@ -40,19 +40,12 @@ echo "%stackName% stack has been created."
 echo "Updating jenkins.rothsmith.net Route 53 record set alias target with ELB host"
 call jenkins-route53.bat
 
-if %RC% NEQ 0 (
-   goto finish
-)
-
-echo "Updating nexus.rothsmith.net Route 53 record set alias target with ELB host"
-call nexus-route53.bat
-
 goto finish
 
 :syntax
    echo "Syntax: %0 [--file | --help]"
    echo Examples:
-   echo    %0 --file   Use local template file to launch stack i.e. file://rothsmith-devops.yaml
+   echo    %0 --file   Use local template file to launch stack i.e. file://rothsmith-jenkins.yaml
    echo    %0 --help   Command usage
    set RC=1
 

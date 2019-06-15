@@ -25,7 +25,7 @@ Parameters:
 Mappings:
   ServerMap: 
     nexus: 
-      ami: "ami-0d3261c8b31b87666"      
+      ami: "ami-03090af8bdba4e9f7"      
       elbPort: '80'
       ec2Port: '8081'      
       scaling: "1,1,1"
@@ -64,12 +64,12 @@ Resources:
   S3RolePolicies:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: s3accami-0d3261c8b31b87666
+      PolicyName: s3access
       PolicyDocument:
         Statement:
-        - Effect: Allowami-0d3261c8b31b87666
+        - Effect: Allow
           Action: s3:*
-          Resource: "*"ami-0d3261c8b31b87666
+          Resource: "*"
       Roles:
       - Ref: S3AccessRole
   S3InstanceProfile:
