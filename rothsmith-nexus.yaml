@@ -25,7 +25,7 @@ Parameters:
 Mappings:
   ServerMap: 
     nexus: 
-      ami: "aami-0d0f12998b083b1b3"      
+      ami: "ami-0d0f12998b083b1b3"      
       elbPort: '80'
       ec2Port: '8081'      
       scaling: "1,1,1"
