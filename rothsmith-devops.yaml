@@ -37,7 +37,7 @@ Mappings:
       elbTier: public
       healthCheckType: ELB
     jenkins: 
-      ami: "ami-0b1a19a6059ecb183"      
+      ami: "ami-0c84e6fd0bc23a1f2"      
       elbPort: '80'
       ec2Port: '8080'
       scaling: "1,1,1"
