@@ -29,7 +29,7 @@ Mappings:
       elbPort: '80'
       ec2Port: '8081'      
       scaling: "1,1,1"
-      type: "t2.small"ZZ
+      type: "t2.small"
       name: Nexus Server
       owner: drothauser@yahoo.com
       description: Nexus Repository Manager
