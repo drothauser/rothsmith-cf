@@ -382,3 +382,8 @@ Outputs:
   LinuxBastionHost:
     Description: Linux bastion instance
     Value: !Ref 'LinuxBastionHost'
+  LinuxBastionIp:
+    Description: Linux bastion host IP
+    Value: !GetAtt LinuxBastionHost.PublicIp
+    Export:
+      Name: !Sub "${AWS::StackName}-LinuxBastionIp"
