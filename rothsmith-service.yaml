@@ -123,7 +123,7 @@ Resources:
     Properties:
       Port: !Ref Ec2Port
       Protocol: HTTP
-      HealthCheckIntervalSeconds: 20
+      HealthCheckIntervalSeconds: 30
       HealthCheckTimeoutSeconds: 5
       UnhealthyThresholdCount: 5
       HealthCheckPath: "/"
