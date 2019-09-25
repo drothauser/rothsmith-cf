@@ -1,2 +1,34 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: Rothsmith Network Interfaces
+Resources:
+  webENI:
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+        Tags:
+        - Key: foo
+          Value: bar
+        Description: A nice description.
+        SourceDestCheck: 'false'
+        GroupSet:
+        - sg-c6f9e6ba
+        SubnetId: subnet-910521ca
+        PrivateIpAddress: 172.31.47.154
+  tomcatENI:
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+        Tags:
+        - Key: foo
+          Value: bar
+        Description: A nice description.
+        SourceDestCheck: 'false'
+        GroupSet:
+        - sg-c6f9e6ba
+        SubnetId: subnet-910521ca
+        #PrivateIpAddress: 172.31.47.154
+Outputs:
+  WebEniIpAddress:    
+    Description: Web private IP address of the network interface.
+    Value: !GetAtt webENI.PrimaryPrivateIpAddress
+  TomcatEniIpAddress:    
+    Description: Tomcat private IP address of the network interface.
+    Value: !GetAtt tomcatENI.PrimaryPrivateIpAddress
