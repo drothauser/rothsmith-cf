@@ -1,6 +1,10 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: Creates an ELB, ASG, and LC to provide a service
 Parameters:
+  CertificateArn:
+    Type: String
+    Description: "The AWS Resource Name of the certificate from the AWS Certificate Manager service."
+    Default: "arn:aws:acm:us-east-1:128157188766:certificate/c5830a3e-fe91-4872-85f1-4371465db865"
   ElbSNs:
     #Type: 'List<AWS::EC2::Subnet::Id>'
     Type: String 
@@ -70,6 +74,13 @@ Mappings:
     private:
       scheme: internal
 Resources:
+  RothsmithCert:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: "*.rothsmith.net"
+      DomainValidationOptions:
+        - DomainName: rothsmith.net
+          ValidationDomain: rothsmith.net
 #  LoadBalancer:
 #    Type: AWS::ElasticLoadBalancing::LoadBalancer
 #    Properties:      
@@ -113,11 +124,17 @@ Resources:
     Properties:
       LoadBalancerArn: !Ref LoadBalancer
       Port: !Ref ElbPort
-      Protocol: HTTP
+      Protocol: HTTPS
       DefaultActions:
         - Type: forward
           TargetGroupArn:
             Ref: TargetGroup
+  ListenerCertificate:
+    Type: AWS::ElasticLoadBalancingV2::ListenerCertificate
+    Properties: 
+      Certificates: 
+        - !Ref CertificateArn
+      ListenerArn: !Ref LoadBalancerListener
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
