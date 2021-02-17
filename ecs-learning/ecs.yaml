@@ -1,0 +1,186 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Create ECS cluster"
+
+Parameters:
+    Name:
+        Type: String
+        Description: The name of the ECS Cluster
+
+    VPC:
+        Type: String
+        Description: The vpc to launch the service
+        Default: vpc-ID
+
+    PrivateSubnet01:
+        Type: String
+        Description: The subnet where to launch the ecs instances
+        Default: subnet-ID
+
+    PrivateSubnet02:
+        Type: String
+        Description: The subnet where to launch the ecs instances
+        Default: subnet-ID
+
+    InstanceType:
+        Type: String
+        Description: The EC2 instance type
+        Default: "t2.micro"
+
+    MinSize:
+        Type: String
+        Description: The subnet where to launch the ec2
+        Default: 1
+
+    MaxSize:
+        Type: String
+        Description: The subnet where to launch the ec2
+        Default: 2
+
+    DesiredSize:
+        Type: String
+        Description: The subnet where to launch the ec2
+        Default: 1
+
+Resources:
+    IAMInstanceRole:
+        Type: 'AWS::IAM::Role'
+        Properties:
+          Description: The ECS Instance Role
+          RoleName: ecsInstanceRole2
+          AssumeRolePolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Principal:
+                  Service:
+                  - ec2.amazonaws.com
+                Action:
+                  - 'sts:AssumeRole'
+          ManagedPolicyArns:
+            - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+            - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+            - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+          Tags: 
+            - 
+              Key: "Environment"
+              Value: "test"
+            - 
+              Key: "createdBy"
+              Value: "Douglas Rothauser"
+            - 
+              Key: "Name"
+              Value: "ecsInstanceRole2"
+
+    IAMInstanceProfile:
+        Type: AWS::IAM::InstanceProfile
+        Properties: 
+            InstanceProfileName: ecsInstanceRole2
+            Roles: 
+             - !Ref IAMInstanceRole
+
+    ECSSecurityGroup:
+        Type: "AWS::EC2::SecurityGroup"
+        Properties:
+            GroupDescription: "Security Group to control access to the ECS cluster"
+            GroupName: "test-ECS-SG"
+            VpcId: !Ref VPC
+            SecurityGroupIngress: 
+              - 
+                CidrIp: 0.0.0.0/0
+                FromPort: 80
+                IpProtocol: "tcp"
+                ToPort: 80
+              - 
+                CidrIp: 0.0.0.0/0
+                FromPort: 443
+                IpProtocol: "tcp"
+                ToPort: 443 
+            Tags: 
+              - 
+                Key: "Name"
+                Value: "test-ECS-SG"
+              - 
+                Key: "CreatedBy"
+                Value: "Maureen Barasa"
+              - 
+                Key: "Environment"
+                Value: "test"        
+
+    ECSCluster:
+        Type: 'AWS::ECS::Cluster'
+        Properties:
+           ClusterName: !Ref Name
+           ClusterSettings:
+             - Name: containerInsights
+               Value: enabled
+           Tags: 
+              - 
+                Key: "Name"
+                Value: "test-ecs"
+              - 
+                Key: "CreatedBy"
+                Value: "Douglas Rothauser"
+              - 
+                Key: "Environment"
+                Value: "test"
+
+    ECSAutoScalingGroup:
+        Type: AWS::AutoScaling::AutoScalingGroup
+        Properties:
+            VPCZoneIdentifier: 
+              - !Ref PrivateSubnet01
+              - !Ref PrivateSubnet02
+            LaunchConfigurationName: !Ref LaunchConfiguration
+            MinSize: !Ref MinSize
+            MaxSize: !Ref MaxSize
+            DesiredCapacity: !Ref DesiredSize
+            HealthCheckGracePeriod: 300
+            Tags: 
+              - 
+                Key: "Name"
+                Value: "test-ecs"
+                PropagateAtLaunch: true
+              - 
+                Key: "CreatedBy"
+                Value: "Douglas Rothauser"
+                PropagateAtLaunch: true
+              - 
+                Key: "Environment"
+                Value: "test"
+                PropagateAtLaunch: true
+
+    LaunchConfiguration:
+        Type: AWS::AutoScaling::LaunchConfiguration
+        Properties:
+            ImageId: "ami-ID"
+            SecurityGroups: 
+              - !Ref ECSSecurityGroup
+            InstanceType: !Ref InstanceType
+            IamInstanceProfile: !Ref IAMInstanceProfile
+            KeyName: "test-key"
+            UserData:
+              Fn::Base64: !Sub |
+                #!/bin/bash
+                echo ECS_CLUSTER=test-ecs >> /etc/ecs/ecs.config;echo ECS_BACKEND_HOST= >> /etc/ecs/ecs.config;
+            BlockDeviceMappings: 
+              - 
+                DeviceName: "/dev/xvda"
+                Ebs: 
+                    Encrypted: false
+                    VolumeSize: 20
+                    VolumeType: "gp2"
+                    DeleteOnTermination: true
+            
+            
+Outputs:
+    IAMProfile:
+        Description: The created EC2 Instance Role
+        Value: !Ref IAMInstanceProfile
+
+    AutoScalingGroup:
+        Description: The ECS Autoscaling Group
+        Value: !Ref ECSAutoScalingGroup    
+
+    ECS:
+        Description: The created ECS Cluster
+        Value: !Ref ECSCluster
