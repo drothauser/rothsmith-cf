@@ -1,0 +1,32 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: 'Template to create an ECR repository'
+
+Parameters:
+  EcrName:
+    Type: String
+    Description: "The Name of your ECR registry"
+  
+  Owner:
+    Type: String
+    Description: "Owner/Progenitor of the stack"
+    Default: "drothauser"   
+
+Resources:
+  ECRRepository1:
+    Type: "AWS::ECR::Repository"
+    Properties:
+      RepositoryName: !Ref EcrName
+      ImageScanningConfiguration:
+        scanOnPush: "true"
+      Tags: 
+        - Key: Name
+          Value: !Ref EcrName
+        - Key: createdBy
+          Value: !Ref Owner
+        - Key: Project
+          Value: test-ecs
+
+Outputs:
+  RegistryName:
+    Value: !Ref EcrName
+    Description: "Name of the ECR Registry"
