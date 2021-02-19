@@ -14,14 +14,14 @@ phases:
   build:
     commands:
       - docker pull hello-world
-      - docker tag hello-world:latest 128157188766.dkr.ecr.us-east-1.amazonaws.com/hello-world:latest
+      - docker tag hello-world:latest 128157188766.dkr.ecr.us-east-1.amazonaws.com/rothsmith-ecr:latest
       
   post_build:
     commands:
       - echo build completed on 'date'
       - echo pushing to repo
-      - docker push 128157188766.dkr.ecr.us-east-1.amazonaws.com/hello-world:latest
+      - docker push 128157188766.dkr.ecr.us-east-1.amazonaws.com/rothsmith-ecr:latest
       - echo Writing definitions file...
-      - printf '[{"name":"Hello_World","imageUri":"%s"}]' 128157188766.dkr.ecr.us-east-1.amazonaws.com/hello-world:latest > HelloWorldtaskdefinition.json
+      - printf '[{"name":"Hello_World","imageUri":"%s"}]' 128157188766.dkr.ecr.us-east-1.amazonaws.com/rothsmith-ecr:latest > HelloWorldtaskdefinition.json
 artifacts:
   files: HelloWorldtaskdefinition.json
