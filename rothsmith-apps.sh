@@ -29,8 +29,8 @@ then
    if aws cloudformation wait stack-create-complete --stack-name $stackName
    then
       echo "$stackName stack has been created."
-      echo "Updating nexus.rothsmith.net Route 53 record set alias target with ELB host"
-      ./nexus-route53.sh
+      echo "Updating rothsmith.net Route 53 record set alias target with ELB host"
+      ./rothsmith-route53.sh
    fi
 fi
 
