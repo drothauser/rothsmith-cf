@@ -1,8 +1,28 @@
 #!/bin/bash
 
-EcrName="rothsmith-ecr"
+function usage() {
+   command="${0}"
+   echo "Usage: ${command}
+   -r EcrName - Elastic Container Registry name (required)
+   -o Owner - Owner/Progenitor of the stack"
+   echo "Examples:"
+   echo "${command} -r my-repository"
+   echo "${command} -r my-repository -o drothauser"
+   exit 2
+}
+
 Owner="$(whoami)"
 
+while getopts 'r:o:?h' opt
+do
+   case ${opt} in
+      r) EcrName="${OPTARG}" ;;
+      o) Owner="${OPTARG}" ;;
+      h|?) usage ;;
+   esac
+done
+
+if [[ -z ${EcrName} ]]; then echo "EcrName is required." && usage; fi
 
 subfolder=$(basename `pwd`)
 templateFile="ecr.yaml"
@@ -12,7 +32,7 @@ then
   templateUri='file://${subfolder}/${templateFile}'
 fi
 
-stackName="ROTHSMITH-ECR-LEARNING"
+stackName="rothsmith-ecr-${EcrName}"
 
 echo -e "\n*******************************************************************************
 *
