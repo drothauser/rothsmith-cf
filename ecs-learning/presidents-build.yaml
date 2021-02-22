@@ -9,18 +9,20 @@ phases:
       - ./aws/install
   pre_build:
     commands:
+      - echo logging into docker
+      - docker login --username drothauser -p 7425a41d-dd97-430a-874b-4bafbb479c92
       - echo logging to ecr
       - $(aws ecr get-login --no-include-email --region us-east-1)
   build:
     commands:
-      - docker pull drothauser/presidents:latest
-      - docker tag presidents:latest 128157188766.dkr.ecr.us-east-1.amazonaws.com/presidents:latest                                     
+      - docker -D pull drothauser/presidents:latest
+      - docker -D tag drothauser/presidents:latest 128157188766.dkr.ecr.us-east-1.amazonaws.com/presidents:latest                                     
       
   post_build:
     commands:
       - echo build completed on 'date'
       - echo pushing to repo
-      - docker push 128157188766.dkr.ecr.us-east-1.amazonaws.com/presidents:latest
+      - docker -D push 128157188766.dkr.ecr.us-east-1.amazonaws.com/presidents:latest
       - echo Writing definitions file...
       - printf '[{"name":"Presidents","imageUri":"%s"}]' 128157188766.dkr.ecr.us-east-1.amazonaws.com/presidents:latest > Presidentstaskdefinition.json
 artifacts:

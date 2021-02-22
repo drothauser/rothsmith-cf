@@ -6,9 +6,14 @@ Scaling="1,2,1"
 vpcTag="ROTHSMITH-VPC"
 publicSGTag="PublicInstanceSG"
 privateSGTag="PrivateSubnetInstanceSG"
+publicSubnetTag="PublicSubnet"
+privateSubnetTag="PrivateSubnet"
 
 VpcId=$(aws ec2 describe-vpcs --filters "Name='tag-value',Values='${vpcTag}'" --query 'Vpcs[*].VpcId' --output text)
-Subnets=$(aws ec2 describe-subnets --query "Subnets[?VpcId=='${VpcId}'].[SubnetId]" --output text | paste -s -d ,)
+
+PublicSubnets=$(aws ec2 describe-subnets --query "Subnets[?Tags[?starts_with(Value, '${publicSubnetTag}') && [VpcId=='${VpcId}']]].[SubnetId]" --output text | paste -s -d ,)
+PrivateSubnets=$(aws ec2 describe-subnets --query "Subnets[?Tags[?starts_with(Value, '${privateSubnetTag}') && [VpcId=='${VpcId}']]].[SubnetId]" --output text | paste -s -d ,)
+
 PublicSGs=$(aws ec2 describe-security-groups --filters "Name='tag-value',Values='${publicSGTag}'" --query 'SecurityGroups[*].GroupId' --output text)
 PrivateSGs=$(aws ec2 describe-security-groups --filters "Name='tag-value',Values='${privateSGTag}'" --query 'SecurityGroups[*].GroupId' --output text)
 
@@ -43,13 +48,15 @@ echo -e "\n*********************************************************************
 *   Owner=${Owner}
 *   Scaling=${Scaling}
 *   SecurityGroups=${SecurityGroups}
-*   Subnets=${Subnets}
+*   Subnets=${PublicSubnets}
 *   VpcId=${VpcId}
 *
 * Miscellany:
 *   vpcTag=${vpcTag}
 *   publicSGTag=${publicSGTag}
 *   privateSGTag=${privateSGTag}
+*   publicSubnetTag=${publicSubnetTag}
+*   privateSubnetTag=${privateSubnetTag}
 *******************************************************************************************"
 export IFS=$'\n'
 if aws cloudformation create-stack\
@@ -64,7 +71,7 @@ if aws cloudformation create-stack\
     ParameterKey=Owner,ParameterValue=\"${Owner}\" \
     ParameterKey=Scaling,ParameterValue=\"${Scaling}\" \
     ParameterKey=SecurityGroups,ParameterValue=\"${SecurityGroups}\" \
-    ParameterKey=Subnets,ParameterValue=\"${Subnets}\" \
+    ParameterKey=Subnets,ParameterValue=\"${PublicSubnets}\" \
     ParameterKey=VpcId,ParameterValue=\"${VpcId}\"
 then
    echo "Creating $stackName Stack..."
