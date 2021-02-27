@@ -31,21 +31,30 @@ Parameters:
     Description: "Owner/Progenitor of the stack"
     Default: "drothauser"   
 
+  PrivateSGs:
+    Type: 'List<AWS::EC2::SecurityGroup::Id>'
+    Description: "Security Groups for ECS instances"
+
   PrivateSubnets:
     Type: 'List<AWS::EC2::Subnet::Id>'
     Description: "Subnets from which to launch the ECS instances from"
+
+  Project:
+    Type: String
+    Description: "Project name"
+    Default: "Presidents"   
+
+  PublicSGs:
+    Type: 'List<AWS::EC2::SecurityGroup::Id>'
+    Description: "Security Groups for ECS instances"
 
   PublicSubnets:
     Type: 'List<AWS::EC2::Subnet::Id>'
     Description: "Subnets from which to launch the ECS instances from"
 
-  PrivateSGs:
-    Type: 'List<AWS::EC2::SecurityGroup::Id>'
-    Description: "Security Groups for ECS instances"
-
-  PublicSGs:
-    Type: 'List<AWS::EC2::SecurityGroup::Id>'
-    Description: "Security Groups for ECS instances"
+  RootStack:
+    Type: String
+    Description: "My root (parent) stack"       
 
   Scaling:
     Type: CommaDelimitedList
@@ -64,7 +73,8 @@ Resources:
       TemplateURL: !Join ['', ['https://s3.amazonaws.com/',!Ref DevOpsBucket,'/ecs-learning/ecsTaskRole.yaml']]
       Parameters:
         Owner: !Ref Owner
-        RootStack: "${AWS::StackName}"
+        Project: !Ref Project
+        RootStack: !Ref RootStack
   # ECSTask:
   #   Type: AWS::CloudFormation::Stack
   #   Properties:
@@ -139,7 +149,7 @@ Resources:
         Tags: 
           - 
             Key: "Project"
-            Value: "presidents"
+            Value: !Ref Project
           - 
             Key: "createdBy"
             Value: !Ref Owner
@@ -148,7 +158,7 @@ Resources:
             Value: "dev"
           - 
             Key: "Name"
-            Value: "presidents-Application-Load-Balancer"
+            Value: !Join ['', [!Ref Project, "Application-Load-Balancer"]]
 
   HTTPSListener:
     Type: "AWS::ElasticLoadBalancingV2::Listener"
@@ -279,7 +289,7 @@ Resources:
           PropagateAtLaunch: true
         - 
           Key: "CreatedBy"
-          Value: "Douglas Rothauser"
+          Value: !Ref Owner
           PropagateAtLaunch: true
         - 
           Key: "Environment"

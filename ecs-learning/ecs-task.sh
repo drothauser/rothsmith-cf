@@ -11,28 +11,40 @@ function usage() {
    exit 2
 }
 
+echo "Initializing..."
+
+ExecutionRoleArn="AWSECSTaskExecutionRole"
 Owner="$(whoami)"
+
+PublicSGs=$(aws ec2 describe-security-groups --filters "Name='tag-value',Values='PublicInstanceSG'" --query 'SecurityGroups[*].GroupId' --output text)
+PrivateSGs=$(aws ec2 describe-security-groups --filters "Name='tag-value',Values='PrivateSubnetInstanceSG'" --query 'SecurityGroups[*].GroupId' --output text)
+SecurityGroups="${PrivateSGs}"
+
+privateSubnetTag="PrivateSubnet"
+PrivateSubnets=$(aws ec2 describe-subnets --query "Subnets[?Tags[?starts_with(Value, 'PrivateSubnet') && [VpcId=='${VpcId}']]].[SubnetId]" --output text | paste -s -d ,)
 
 while getopts 'r:o:?h' opt
 do
    case ${opt} in
-      r) EcrName="${OPTARG}" ;;
+      r) ExecutionRoleArn="${OPTARG}" ;;
       o) Owner="${OPTARG}" ;;
+      s) SecurityGroups="${OPTARG}" ;;
+      S) Subnets="${OPTARG}" ;;
       h|?) usage ;;
    esac
 done
 
-if [[ -z ${EcrName} ]]; then echo "EcrName is required." && usage; fi
+#if [[ -z ${EcrName} ]]; then echo "EcrName is required." && usage; fi
 
 subfolder=$(basename `pwd`)
-templateFile="ecr.yaml"
+templateFile="ecs-task.yaml"
 templateUri="https://s3.amazonaws.com/rothsmith-cloudformation/${subfolder}/${templateFile}"
 if [ "$1" == "--file" ]
 then
   templateUri='file://${subfolder}/${templateFile}'
 fi
 
-stackName="ROTHSMITH-ECR-${EcrName^^}"
+stackName="ROTHSMITH-ECS-TASK"
 
 echo -e "\n*******************************************************************************
 *
@@ -41,10 +53,13 @@ echo -e "\n*********************************************************************
 *   templateUri=${templateUri}
 *
 * Template Parameters:
-*   EcrName=${EcrName}
+*   ExecutionRoleArn=${ExecutionRoleArn}
 *   Owner=${Owner}
+*   SecurityGroups=${SecurityGroups}
+*   Subnets=${PrivateSubnets}
 *
 *******************************************************************************************"
+
 export IFS=$'\n'
 if aws cloudformation create-stack\
  --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
@@ -52,8 +67,10 @@ if aws cloudformation create-stack\
  --stack-name $stackName \
  --template-body ${templateUri}\
  --parameters\
-    ParameterKey=EcrName,ParameterValue=\"${EcrName}\" \
-    ParameterKey=Owner,ParameterValue=\"${Owner}\" 
+    ParameterKey=ExecutionRoleArn,ParameterValue=\"${ExecutionRoleArn}\" \
+    ParameterKey=Owner,ParameterValue=\"${Owner}\" \
+    ParameterKey=SecurityGroups,ParameterValue=\"${SecurityGroups}\" \
+    ParameterKey=Subnets,ParameterValue=\"${PrivateSubnets}\"
 then
    echo "Creating $stackName Stack..."
    if aws cloudformation wait stack-create-complete --stack-name $stackName

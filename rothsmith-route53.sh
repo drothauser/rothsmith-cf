@@ -4,11 +4,11 @@
 
 rothsmithZone=$(aws route53 list-hosted-zones-by-name --dns-name "rothsmith.net" --max-items 1 --query 'HostedZones[*].Id' --output text | sed 's/\/hostedzone\///g')
 
-lbId="web-public"
-if [[ ! -z ${1} ]]; then lbId="${1}"; fi
+loadBalancerPrefix="web-public"
+if [[ ! -z ${1} ]]; then loadBalancerPrefix="${1}"; fi
 
-#rothsmithElb=$(aws elbv2 describe-load-balancers | grep -i "${lbId}" | grep DNSName | awk '{print $2}' | sed 's/[\"\,]//g')
-rothsmithElb=$(aws elbv2 describe-load-balancers --query "LoadBalancers[?starts_with(DNSName,'test')].DNSName" --output text)
+rothsmithElb=$(aws elbv2 describe-load-balancers | grep -i "${loadBalancerPrefix}" | grep DNSName | awk '{print $2}' | sed 's/[\"\,]//g')
+#rothsmithElb=$(aws elbv2 describe-load-balancers --query "LoadBalancers[?starts_with(DNSName,'test')].DNSName" --output text)
 
 rothsmithJson=$(cat ./rothsmith-route53.json | sed "s/XXXXXXX/${rothsmithElb}/")
 

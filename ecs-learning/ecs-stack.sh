@@ -1,7 +1,6 @@
 #!/bin/bash
 
 AmiId="ami-00a35b04ab99b549a"
-#AmiId="ami-08a29dcf20b8fea61"
 EC2KeyPair="RothsmithKeyPair"
 Scaling="1,2,1"
 vpcTag="ROTHSMITH-VPC"
@@ -19,19 +18,20 @@ PublicSGs=$(aws ec2 describe-security-groups --filters "Name='tag-value',Values=
 PrivateSGs=$(aws ec2 describe-security-groups --filters "Name='tag-value',Values='${privateSGTag}'" --query 'SecurityGroups[*].GroupId' --output text)
 
 ClusterName='RothsmithECSCluster'
+Project='Presidents'
 InstanceType="t2.micro"
 Scaling="1,2,1"
 Owner="$(whoami)"
 
 subfolder=$(basename `pwd`)
-templateFile="ecs.yaml"
+templateFile="ecs-stack.yaml"
 templateUri="https://s3.amazonaws.com/rothsmith-cloudformation/${subfolder}/${templateFile}"
 if [ "$1" == "--file" ]
 then
   templateUri='file://${subfolder}/${templateFile}'
 fi
 
-stackName="ROTHSMITH-ECS-LEARNING"
+stackName="ROTHSMITH-ECS-CLUSTER-EC2"
 
 echo -e "\n*******************************************************************************
 *
@@ -45,6 +45,7 @@ echo -e "\n*********************************************************************
 *   InstanceType=${InstanceType}
 *   ClusterName=${ClusterName}
 *   Owner=${Owner}
+*   Project=${Project}
 *   Scaling=${Scaling}
 *   PrivateSGs=${PrivateSGs}
 *   PublicSGs=${PublicSGs}
@@ -71,10 +72,11 @@ if aws cloudformation create-stack\
     ParameterKey=ClusterName,ParameterValue=\"${ClusterName}\" \
     ParameterKey=Owner,ParameterValue=\"${Owner}\" \
     ParameterKey=Scaling,ParameterValue=\"${Scaling}\" \
-    ParameterKey=PrivateSGs,ParameterValue=\"${PrivateSGs}\" \
-    ParameterKey=PrivateSubnets,ParameterValue=\"${PrivateSubnets}\" \
-    ParameterKey=PublicSGs,ParameterValue=\"${PublicSGs}\" \
-    ParameterKey=PublicSubnets,ParameterValue=\"${PublicSubnets}\" \
+    ParameterKey=PrivateSGs,ParameterValue=\"'${PrivateSGs}'\" \
+    ParameterKey=PrivateSubnets,ParameterValue=\"'${PrivateSubnets}'\" \
+    ParameterKey=Project,ParameterValue=\"${Project}\" \
+    ParameterKey=PublicSGs,ParameterValue=\"'${PublicSGs}'\" \
+    ParameterKey=PublicSubnets,ParameterValue=\"'${PublicSubnets}'\" \
     ParameterKey=VpcId,ParameterValue=\"${VpcId}\"
 then
    echo "Creating $stackName Stack..."

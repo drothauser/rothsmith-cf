@@ -1,0 +1,101 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Task and service definition"
+
+Parameters:
+
+  ContainerImage:
+    Type: String
+    Description: "The docker image's cooridinates"
+    Default: "128157188766.dkr.ecr.us-east-1.amazonaws.com/presidents"
+
+  ClusterArn:
+    Type: String
+    Description: "The ECS Cluster ARN"
+    Default: "arn:aws:ecs:us-east-1:128157188766:cluster/RothsmithECSCluster"
+
+  ExecutionRoleArn:
+    Type: String
+    Description: "The ARN of the task execution role"
+    Default: "arn:aws:iam::128157188766:role/AWSECSTaskExecutionRole"
+
+  Owner:
+    Type: String
+    Description: "Owner/Progenitor of the stack"
+    Default: "drothauser"  
+
+  SecurityGroups:
+    Type: 'List<AWS::EC2::SecurityGroup::Id>'
+    Description: "Security Groups for ECS instances"
+
+  Subnets:
+    Type: 'List<AWS::EC2::Subnet::Id>'
+    Description: "Subnets from which to launch the ECS instances from"
+
+Resources:
+    CWLoggroup:
+        Type: AWS::Logs::LogGroup
+        Properties:
+            LogGroupName: ecs-hello-world-Loggroup
+
+    TaskDefinition:
+        Type: "AWS::ECS::TaskDefinition"
+        Properties:
+            ContainerDefinitions: 
+              - 
+                Essential: true
+                Image: !Ref ContainerImage
+                LogConfiguration: 
+                    LogDriver: "awslogs"
+                    Options: 
+                        awslogs-group: !Ref CWLoggroup
+                        awslogs-region: !Ref AWS::Region
+                        awslogs-stream-prefix: "ecs"
+                Name: "Presidents"
+                PortMappings: 
+                  - 
+                    ContainerPort: 80
+                    HostPort: 80
+                    Protocol: "tcp"
+            Family: "presidents"
+            TaskRoleArn: "arn:aws:iam::128157188766:role/DevOps"
+            ExecutionRoleArn: "arn:aws:iam::128157188766:role/DevOps"
+            NetworkMode: "awsvpc"
+            RequiresCompatibilities: 
+              - "EC2"
+            Cpu: "256"
+            Memory: "512"
+
+    ServiceDefinition:
+        Type: "AWS::ECS::Service"
+        Properties:
+            ServiceName: "presidents"
+            Cluster: !Ref ClusterArn
+            LoadBalancers: 
+              - 
+                #TargetGroupArn: "arn:aws:elasticloadbalancing:eu-central-1:************:targetgroup/test-fargate-hello/*********"
+                TargetGroupArn: "arn:aws:elasticloadbalancing:us-east-1:128157188766:targetgroup/target-group-1/4909a81ff56967a9"
+                ContainerName: "Presidents"
+                ContainerPort: 80
+            DesiredCount: 1
+            LaunchType: "EC2"
+            #PlatformVersion: "1.4.0"
+            TaskDefinition: !Ref TaskDefinition
+            DeploymentConfiguration: 
+                MaximumPercent: 200
+                MinimumHealthyPercent: 100
+            NetworkConfiguration: 
+                AwsvpcConfiguration: 
+                    #AssignPublicIp: "ENABLED"
+                    SecurityGroups: !Ref SecurityGroups
+                    Subnets: !Ref Subnets
+            HealthCheckGracePeriodSeconds: 300
+            SchedulingStrategy: "REPLICA"
+
+Outputs:
+  PresidentsTaskDefinition:
+    Description: The created name of the ECS TaskDefinition 
+    Value: !Ref TaskDefinition
+
+  PresidentsService:
+    Description: "The ECS service"
+    Value: !Ref ServiceDefinition

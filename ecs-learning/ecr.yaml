@@ -12,7 +12,7 @@ Parameters:
     Default: "drothauser"   
 
 Resources:
-  ECRRepository1:
+  ECRRepository:
     Type: "AWS::ECR::Repository"
     Properties:
       RepositoryName: !Ref EcrName
@@ -24,9 +24,9 @@ Resources:
         - Key: createdBy
           Value: !Ref Owner
         - Key: Project
-          Value: test-ecs
+          Value: "Rothsmith ECS"
 
 Outputs:
-  RegistryName:
-    Value: !Ref EcrName
-    Description: "Name of the ECR Registry"
+  RegistryArn:
+    Value: !GetAtt ECRRepository.Arn
+    Description: "Arn of the ECR Registry"
