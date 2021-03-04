@@ -1,6 +1,7 @@
 #!/bin/bash
 
-AmiId="ami-00a35b04ab99b549a"
+#AmiId="ami-00a35b04ab99b549a"
+AmiId="ami-08a29dcf20b8fea61"
 EC2KeyPair="RothsmithKeyPair"
 Scaling="1,2,1"
 vpcTag="ROTHSMITH-VPC"
@@ -72,11 +73,11 @@ if aws cloudformation create-stack\
     ParameterKey=ClusterName,ParameterValue=\"${ClusterName}\" \
     ParameterKey=Owner,ParameterValue=\"${Owner}\" \
     ParameterKey=Scaling,ParameterValue=\"${Scaling}\" \
-    ParameterKey=PrivateSGs,ParameterValue=\"'${PrivateSGs}'\" \
-    ParameterKey=PrivateSubnets,ParameterValue=\"'${PrivateSubnets}'\" \
+    ParameterKey=PrivateSGs,ParameterValue=\"${PrivateSGs}\" \
+    ParameterKey=PrivateSubnets,ParameterValue=\"${PrivateSubnets}\" \
     ParameterKey=Project,ParameterValue=\"${Project}\" \
-    ParameterKey=PublicSGs,ParameterValue=\"'${PublicSGs}'\" \
-    ParameterKey=PublicSubnets,ParameterValue=\"'${PublicSubnets}'\" \
+    ParameterKey=PublicSGs,ParameterValue=\"${PublicSGs}\" \
+    ParameterKey=PublicSubnets,ParameterValue=\"${PublicSubnets}\" \
     ParameterKey=VpcId,ParameterValue=\"${VpcId}\"
 then
    echo "Creating $stackName Stack..."

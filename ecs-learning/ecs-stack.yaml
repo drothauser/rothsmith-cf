@@ -80,5 +80,18 @@ Resources:
         PrivateSGs: !Ref PrivateSGs
         PublicSGs: !Ref PublicSGs
         RootStack: !Ref 'AWS::StackName'
-        Scaling: !Ref Scaling 
+        Scaling: !Ref Scaling
         VpcId: !Ref VpcId
+
+  ECSTask:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/',!Ref DevOpsBucket,'/ecs-learning/ecs-task.yaml']]
+      Parameters:
+        ContainerImage: !Sub "${AWS::AccountId}.dkr.ecr.us-east-1.amazonaws.com/presidents"
+        ClusterArn: !GetAtt [ECSClusterEc2, Outputs.ECSCluster]
+        ExecutionRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/DevOps"
+        Owner: !Ref Owner
+        SecurityGroups: !Ref PublicSGs
+        Subnets: !Ref PublicSubnets
+        TargetGroupArn:  !GetAtt [ECSClusterEc2, Outputs.TargetGroup]

@@ -53,5 +53,5 @@ Outputs:
   ECSTaskExecutionRole:
     Description: "The ECS Task Execution Role"
     Value: !Ref ECSTaskExecutionRole
-    Export: 
-      Name: !Sub "${RootStack}-ecs-role"
+    #Export: 
+    #    Name: !Join ['-', [!Ref RootStack, "ECSTaskExecutionRole"]]

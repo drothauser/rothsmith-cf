@@ -32,11 +32,11 @@ Parameters:
     Default: "drothauser"   
 
   PrivateSGs:
-    Type: 'List<AWS::EC2::SecurityGroup::Id>'
+    Type: String
     Description: "Security Groups for ECS instances"
 
   PrivateSubnets:
-    Type: 'List<AWS::EC2::Subnet::Id>'
+    Type: String
     Description: "Subnets from which to launch the ECS instances from"
 
   Project:
@@ -45,11 +45,11 @@ Parameters:
     Default: "Presidents"   
 
   PublicSGs:
-    Type: 'List<AWS::EC2::SecurityGroup::Id>'
+    Type: String
     Description: "Security Groups for ECS instances"
 
   PublicSubnets:
-    Type: 'List<AWS::EC2::Subnet::Id>'
+    Type: String
     Description: "Subnets from which to launch the ECS instances from"
 
   RootStack:
@@ -124,8 +124,8 @@ Resources:
         Name: "test-Application-Load-Balancer"
         Scheme: "internet-facing"
         Type: "application"
-        Subnets: !Ref PublicSubnets
-        SecurityGroups: !Ref PublicSGs
+        Subnets: !Split [',', !Ref PublicSubnets]
+        SecurityGroups: !Split [',', !Ref PublicSGs]
         IpAddressType: "ipv4"
         LoadBalancerAttributes: 
           #- 
@@ -198,7 +198,7 @@ Resources:
     Properties:
       HealthCheckIntervalSeconds: 30
       HealthCheckPath: "/"
-      Port: 80
+      Port: 8080
       Protocol: "HTTP"
       HealthCheckPort: "traffic-port"
       HealthCheckProtocol: "HTTP"
@@ -276,12 +276,14 @@ Resources:
   ECSAutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      VPCZoneIdentifier: !Ref PrivateSubnets
+      VPCZoneIdentifier: !Split [',', !Ref PrivateSubnets]
       LaunchConfigurationName: !Ref LaunchConfiguration
       MinSize: !Select ['0', !Ref Scaling]
       MaxSize: !Select ['1', !Ref Scaling]
       DesiredCapacity: !Select ['2', !Ref Scaling]
       HealthCheckGracePeriod: 300
+      #TargetGroupARNs: 
+      #  - !Ref ALBTargetGroup
       Tags: 
         - 
           Key: "Name"
@@ -300,7 +302,7 @@ Resources:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
       ImageId: !Ref AmiId
-      SecurityGroups: !Ref PrivateSGs
+      SecurityGroups: !Split [',', !Ref PrivateSGs]
       InstanceType: !Ref InstanceType
       #IamInstanceProfile: !Ref IAMInstanceProfile
       IamInstanceProfile: DevOps
@@ -327,7 +329,7 @@ Outputs:
     Description: "The ECS Autoscaling Group"
     Value: !Ref ECSAutoScalingGroup    
 
-  ECS:
+  ECSCluster:
     Description: "The created ECS Cluster"
     Value: !Ref ECSCluster
 

@@ -31,11 +31,15 @@ Parameters:
     Type: 'List<AWS::EC2::Subnet::Id>'
     Description: "Subnets from which to launch the ECS instances from"
 
+  TargetGroupArn:
+    Type: String
+    Description: "The target group ARN of the application load balancer"
+
 Resources:
     CWLoggroup:
         Type: AWS::Logs::LogGroup
         Properties:
-            LogGroupName: ecs-hello-world-Loggroup
+            LogGroupName: ecs-presidents
 
     TaskDefinition:
         Type: "AWS::ECS::TaskDefinition"
@@ -50,11 +54,11 @@ Resources:
                         awslogs-group: !Ref CWLoggroup
                         awslogs-region: !Ref AWS::Region
                         awslogs-stream-prefix: "ecs"
-                Name: "Presidents"
+                Name: "presidents"
                 PortMappings: 
                   - 
-                    ContainerPort: 80
-                    HostPort: 80
+                    ContainerPort: 8080
+                    HostPort: 8080
                     Protocol: "tcp"
             Family: "presidents"
             TaskRoleArn: "arn:aws:iam::128157188766:role/DevOps"
@@ -72,10 +76,9 @@ Resources:
             Cluster: !Ref ClusterArn
             LoadBalancers: 
               - 
-                #TargetGroupArn: "arn:aws:elasticloadbalancing:eu-central-1:************:targetgroup/test-fargate-hello/*********"
-                TargetGroupArn: "arn:aws:elasticloadbalancing:us-east-1:128157188766:targetgroup/target-group-1/4909a81ff56967a9"
-                ContainerName: "Presidents"
-                ContainerPort: 80
+                TargetGroupArn: !Ref TargetGroupArn
+                ContainerName: "presidents"
+                ContainerPort: 8080
             DesiredCount: 1
             LaunchType: "EC2"
             #PlatformVersion: "1.4.0"
