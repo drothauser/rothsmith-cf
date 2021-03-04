@@ -63,7 +63,7 @@ echo -e "\n*********************************************************************
 *******************************************************************************************"
 export IFS=$'\n'
 if aws cloudformation create-stack\
- --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+ --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
  --disable-rollback \
  --stack-name $stackName \
  --template-body ${templateUri}\
@@ -84,10 +84,8 @@ then
    if aws cloudformation wait stack-create-complete --stack-name $stackName
    then
       echo "$stackName stack has been created."
-      #echo "Updating nexus.rothsmith.net Route 53 record set alias target with ELB host"
-      #./nexus-route53.sh
-      #echo "Updating jenkins.rothsmith.net Route 53 record set alias target with ELB host"
-      #./jenkins-route53.sh
+      echo "Updating ${Project,,}.rothsmith.net Route 53 record set alias target with ELB host"
+      ../rothsmith-route53.sh ${Project}
    fi
 fi
 

@@ -121,7 +121,7 @@ Resources:
   ApplicationLoadBalancer:
     Type: "AWS::ElasticLoadBalancingV2::LoadBalancer"
     Properties:
-        Name: "test-Application-Load-Balancer"
+        Name: !Sub "${Project}-alb"
         Scheme: "internet-facing"
         Type: "application"
         Subnets: !Split [',', !Ref PublicSubnets]

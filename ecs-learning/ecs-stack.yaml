@@ -92,6 +92,8 @@ Resources:
         ClusterArn: !GetAtt [ECSClusterEc2, Outputs.ECSCluster]
         ExecutionRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/DevOps"
         Owner: !Ref Owner
-        SecurityGroups: !Ref PublicSGs
-        Subnets: !Ref PublicSubnets
+        #SecurityGroups: !Ref PublicSGs
+        #Subnets: !Ref PublicSubnets
+        SecurityGroups: !Ref PrivateSGs
+        Subnets: !Ref PrivateSubnets
         TargetGroupArn:  !GetAtt [ECSClusterEc2, Outputs.TargetGroup]
