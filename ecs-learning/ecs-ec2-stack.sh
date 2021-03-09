@@ -25,7 +25,7 @@ Scaling="1,2,1"
 Owner="$(whoami)"
 
 subfolder=$(basename `pwd`)
-templateFile="ecs-stack.yaml"
+templateFile="ecs-ec2-stack.yaml"
 templateUri="https://s3.amazonaws.com/rothsmith-cloudformation/${subfolder}/${templateFile}"
 if [ "$1" == "--file" ]
 then

@@ -37,14 +37,14 @@ done
 #if [[ -z ${EcrName} ]]; then echo "EcrName is required." && usage; fi
 
 subfolder=$(basename `pwd`)
-templateFile="ecs-task.yaml"
+templateFile="ecs-fargate-task.yaml"
 templateUri="https://s3.amazonaws.com/rothsmith-cloudformation/${subfolder}/${templateFile}"
 if [ "$1" == "--file" ]
 then
   templateUri='file://${subfolder}/${templateFile}'
 fi
 
-stackName="ROTHSMITH-ECS-TASK"
+stackName="ROTHSMITH-ECS-TASK-FARGATE"
 
 echo -e "\n*******************************************************************************
 *

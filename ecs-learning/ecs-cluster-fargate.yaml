@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Create ECS FARGATE cluster"
+
+Parameters:
+ 
+  ClusterName:
+    Type: String
+    Description: "Rothsmith ECS Cluster for learning"
+
+  Owner:
+    Type: String
+    Description: "Owner/Progenitor of the stack"
+    Default: "drothauser"   
+
+  Project:
+    Type: String
+    Description: "Project name"
+    Default: "Presidents"   
+
+  RootStack:
+    Type: String
+    Description: "My root (parent) stack"       
+
+Resources:
+                
+  ECSCluster:
+    Type: 'AWS::ECS::Cluster'
+    Properties:
+      ClusterName: !Ref ClusterName
+      ClusterSettings:
+        - Name: containerInsights
+          Value: enabled
+      CapacityProviders:
+        - FARGATE
+      Tags: 
+        - 
+          Key: "Name"
+          Value: !Ref ClusterName
+        - 
+          Key: "CreatedBy"
+          Value: !Ref Owner
+        - 
+          Key: "Environment"
+          Value: "dev"
+         
+Outputs:
+  ECSCluster:
+    Description: "The created ECS Cluster"
+    Value: !Ref ECSCluster

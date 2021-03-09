@@ -86,14 +86,12 @@ Resources:
   ECSTask:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Join ['', ['https://s3.amazonaws.com/',!Ref DevOpsBucket,'/ecs-learning/ecs-task.yaml']]
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/',!Ref DevOpsBucket,'/ecs-learning/ecs-ec2-task.yaml']]
       Parameters:
         ContainerImage: !Sub "${AWS::AccountId}.dkr.ecr.us-east-1.amazonaws.com/presidents"
         ClusterArn: !GetAtt [ECSClusterEc2, Outputs.ECSCluster]
         ExecutionRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/DevOps"
         Owner: !Ref Owner
-        #SecurityGroups: !Ref PublicSGs
-        #Subnets: !Ref PublicSubnets
         SecurityGroups: !Ref PrivateSGs
         Subnets: !Ref PrivateSubnets
         TargetGroupArn:  !GetAtt [ECSClusterEc2, Outputs.TargetGroup]
