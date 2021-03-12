@@ -11,14 +11,6 @@ Parameters:
     Type: String
     Description: "Rothsmith ECS Cluster for learning"
 
-  ClusterType:
-    Type: String
-    Description: "ECS Cluster type - EC2 or FARGATE"
-    Default: "EC2"
-    AllowedValues:
-      - "EC2"    
-      - "FARGATE"
-
   DevOpsBucket:
     Type: String
     Default: rothsmith-cloudformation
@@ -73,10 +65,6 @@ Parameters:
     Type: String
     Description: "The vpc to launch the service"
     Default: vpc-ID
-
-Conditions:
-  IsEc2: !Equals [!Ref ClusterType, 'EC2']
-  IsFargate: !Equals [!Ref ClusterType, 'FARGATE']
 
 Resources:
   ECSTaskRole:
@@ -242,7 +230,6 @@ Resources:
         - 
           Key: "load_balancing.algorithm.type"
           Value: "round_robin"
-
                
   ALBListenerRule:
     Type: "AWS::ElasticLoadBalancingV2::ListenerRule"
@@ -267,53 +254,13 @@ Resources:
             TargetGroupStickinessConfig: 
                 Enabled: false     
 
-  ECSClusterEC2:
-    Condition: IsEc2
+  ECSClusterEC2:    
     Type: 'AWS::ECS::Cluster'
     Properties:
       ClusterName: !Ref ClusterName
       ClusterSettings:
         - Name: containerInsights
           Value: enabled
-      Tags: 
-        - 
-          Key: "Name"
-          Value: !Ref ClusterName
-        - 
-          Key: "CreatedBy"
-          Value: !Ref Owner
-        - 
-          Key: "Environment"
-          Value: "dev"
-
-  ECSClusterFargate:
-    Condition: IsEc2
-    Type: 'AWS::ECS::Cluster'
-    Properties:
-      ClusterName: !Ref ClusterName
-      ClusterSettings:
-        - Name: containerInsights
-          Value: enabled
-      Tags: 
-        - 
-          Key: "Name"
-          Value: !Ref ClusterName
-        - 
-          Key: "CreatedBy"
-          Value: !Ref Owner
-        - 
-          Key: "Environment"
-          Value: "dev"
-
-  ECSCluster:
-    Type: 'AWS::ECS::Cluster'
-    Properties:
-      ClusterName: !Ref ClusterName
-      ClusterSettings:
-        - Name: containerInsights
-          Value: enabled
-      CapacityProviders:
-        - FARGATE
       Tags: 
         - 
           Key: "Name"
@@ -383,7 +330,7 @@ Outputs:
 
   ECSCluster:
     Description: "The created ECS Cluster"
-    Value: !Ref ECSCluster
+    Value: !Ref ECSClusterEC2
 
   ALB:
       Description: The created loadbalancer
