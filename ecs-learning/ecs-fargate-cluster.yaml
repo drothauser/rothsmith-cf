@@ -10,7 +10,7 @@ Parameters:
   Owner:
     Type: String
     Description: "Owner/Progenitor of the stack"
-    Default: "drothauser"   
+    Default: "drothauser"
 
   Project:
     Type: String
@@ -19,10 +19,10 @@ Parameters:
 
   RootStack:
     Type: String
-    Description: "My root (parent) stack"       
+    Description: "My root (parent) stack"    
 
 Resources:
-                
+
   ECSCluster:
     Type: 'AWS::ECS::Cluster'
     Properties:
@@ -32,6 +32,9 @@ Resources:
           Value: enabled
       CapacityProviders:
         - FARGATE
+      DefaultCapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Weight: 1
       Tags: 
         - 
           Key: "Name"

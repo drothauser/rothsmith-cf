@@ -60,28 +60,30 @@ Parameters:
   VpcId:
     Type: String
     Description: "The vpc to launch the service"
-    Default: vpc-ID
 
 Resources:
+
+  ECSAlbFargate:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/',!Ref DevOpsBucket,'/ecs-learning/ecs-alb.yaml']]
+      Parameters:
+        Owner: !Ref Owner
+        Project: !Ref Project        
+        PublicSubnets: !Ref PublicSubnets
+        PublicSGs: !Ref PublicSGs
+        RootStack: !Ref 'AWS::StackName'
+        VpcId: !Ref VpcId
+
   ECSClusterFargate:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Join ['', ['https://s3.amazonaws.com/',!Ref DevOpsBucket,'/ecs-learning/ecs-cluster-fargate.yaml']]
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/',!Ref DevOpsBucket,'/ecs-learning/ecs-fargate-cluster.yaml']]
       Parameters:
-        AmiId: !Ref AmiId
         ClusterName: !Ref ClusterName
-        DevOpsBucket: !Ref DevOpsBucket
-        InstanceType: !Ref InstanceType
-        EC2KeyPair: !Ref EC2KeyPair
         Owner: !Ref Owner
         Project: !Ref Project
-        PrivateSubnets: !Ref PrivateSubnets
-        PublicSubnets: !Ref PublicSubnets
-        PrivateSGs: !Ref PrivateSGs
-        PublicSGs: !Ref PublicSGs
         RootStack: !Ref 'AWS::StackName'
-        Scaling: !Ref Scaling
-        VpcId: !Ref VpcId
 
   ECSTask:
     Type: AWS::CloudFormation::Stack
@@ -89,11 +91,9 @@ Resources:
       TemplateURL: !Join ['', ['https://s3.amazonaws.com/',!Ref DevOpsBucket,'/ecs-learning/ecs-fargate-task.yaml']]
       Parameters:
         ContainerImage: !Sub "${AWS::AccountId}.dkr.ecr.us-east-1.amazonaws.com/presidents"
-        ClusterArn: !GetAtt [ECSClusterEc2, Outputs.ECSCluster]
+        ClusterArn: !GetAtt [ECSClusterFargate, Outputs.ECSCluster]
         ExecutionRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/DevOps"
         Owner: !Ref Owner
-        #SecurityGroups: !Ref PublicSGs
-        #Subnets: !Ref PublicSubnets
         SecurityGroups: !Ref PrivateSGs
         Subnets: !Ref PrivateSubnets
-        TargetGroupArn:  !GetAtt [ECSClusterEc2, Outputs.TargetGroup]
+        TargetGroupArn:  !GetAtt [ECSAlbFargate, Outputs.TargetGroup]

@@ -32,7 +32,7 @@ then
   templateUri='file://${subfolder}/${templateFile}'
 fi
 
-stackName="ROTHSMITH-ECS-CLUSTER-EC2"
+stackName="ROTHSMITH-ECS-EC2-CLUSTER"
 
 echo -e "\n*******************************************************************************
 *
