@@ -216,6 +216,10 @@ Resources:
         FromPort: '80'
         ToPort: '80'
         CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '443'
+        ToPort: '443'
+        CidrIp: 0.0.0.0/0
       Tags:
       - Key: Name
         Value: !Sub 'PublicSG ${VPCCIDR}'
@@ -382,3 +386,8 @@ Outputs:
   LinuxBastionHost:
     Description: Linux bastion instance
     Value: !Ref 'LinuxBastionHost'
+  LinuxBastionIp:
+    Description: Linux bastion host IP
+    Value: !GetAtt LinuxBastionHost.PublicIp
+    Export:
+      Name: !Sub "${AWS::StackName}-LinuxBastionIp"

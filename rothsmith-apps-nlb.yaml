@@ -1,0 +1,172 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Rothsmith Applications
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: Rothsmith application configuration parameters
+      Parameters:
+      - VPCStack
+      - S3Bucket
+    ParameterLabels:
+      VPCStack:
+        default: Enter the stack name used to create the VPC.  
+      S3Bucket:
+        default: Enter S3 bucket name that stores the CloudFormation templates
+Parameters:
+  VPCStack:
+    Type: String
+    Default: 'ROTHSMITH-VPC'
+    Description: The VPC stack to obtain exported values from
+  S3Bucket:
+    Type: String
+    Default: rothsmith-cloudformation
+    Description: The S3 bucket containing CloudFormation templates
+Mappings:
+  ServerMap: 
+    webProxy: 
+      ami: "ami-0151f162d1ff20101"
+      elbPort: '80'
+      ec2Port: '80'      
+      scaling: "1,1,1"
+      type: "t2.small"
+      name: Apache Web Server
+      owner: drothauser@yahoo.com
+      description: DMZ Apache Web Server
+      svcCode: web
+      elbTier: public
+    tomcat: 
+      ami: "ami-07c8b576e965e389e"      
+      ec2Port: '8080'
+      elbPort: '8080'
+      #scaling: "1,3,2"
+      scaling: "1,1,1"
+      type: "t2.medium"
+      name: Tomcat Server
+      owner: drothauser@yahoo.com
+      description: Tomcat Server
+      svcCode: tomcat
+      elbTier: private
+Resources:
+  S3AccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+  S3RolePolicies:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: s3access
+      PolicyDocument:
+        Statement:
+        - Effect: Allow
+          Action: s3:*
+          Resource: "*"
+      Roles:
+      - Ref: S3AccessRole
+  S3InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+      - Ref: S3AccessRole
+  WebProxy:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.amazonaws.com/'
+          - !Ref S3Bucket
+          - '/rothsmith-service-nlb.yaml'
+      Parameters:
+        ElbSNs: !Join
+          - ','
+          - - 'Fn::ImportValue': 
+                !Sub '${VPCStack}-PublicSubnet1'
+            - 'Fn::ImportValue': 
+                !Sub '${VPCStack}-PublicSubnet2'
+        ElbSGs: 
+          'Fn::ImportValue': 
+            !Sub '${VPCStack}-PublicInstanceSG'
+        Ec2SNs: !Join
+          - ','
+          - - 'Fn::ImportValue': 
+                !Sub '${VPCStack}-PublicSubnet1'
+            - 'Fn::ImportValue': 
+                !Sub '${VPCStack}-PublicSubnet2'
+        Ec2SGs: 
+          'Fn::ImportValue': 
+            !Sub '${VPCStack}-PublicInstanceSG'
+        AmiId: !FindInMap [ServerMap, webProxy, ami]
+        ElbPort: !FindInMap [ServerMap, webProxy, elbPort]
+        Ec2Port: !FindInMap [ServerMap, webProxy, ec2Port]
+        Ec2Role: !Ref S3InstanceProfile
+        Ec2Type: !FindInMap [ServerMap, webProxy, type]
+        Ec2Name: !FindInMap [ServerMap, webProxy, name]
+        Ec2Owner: !FindInMap [ServerMap, webProxy, owner]
+        Ec2Desc: !FindInMap [ServerMap, webProxy, description]        
+        ElbTier: !FindInMap [ServerMap, webProxy, elbTier]   
+        Scaling: !FindInMap [ServerMap, webProxy, scaling] 
+        SvcCode: !FindInMap [ServerMap, webProxy, svcCode]        
+        ElbDnsKVPs: !Join [" ", [!GetAtt [Tomcat, Outputs.ElbDnsKVP]]]
+        VpcId: 
+          'Fn::ImportValue': 
+            !Sub '${VPCStack}-VPCID'
+  Tomcat:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.amazonaws.com/'
+          - !Ref S3Bucket
+          - '/rothsmith-service-nlb.yaml'
+      Parameters:
+        ElbSNs: !Join
+          - ','
+          - - 'Fn::ImportValue': 
+                !Sub '${VPCStack}-PrivateSubnet1'
+            - 'Fn::ImportValue': 
+                !Sub '${VPCStack}-PrivateSubnet2'
+        ElbSGs: 
+          'Fn::ImportValue': 
+            !Sub '${VPCStack}-PrivateSubnetInstanceSG'
+        Ec2SNs: !Join
+          - ','
+          - - 'Fn::ImportValue': 
+                !Sub '${VPCStack}-PrivateSubnet1'
+            - 'Fn::ImportValue': 
+                !Sub '${VPCStack}-PrivateSubnet2'
+        Ec2SGs:  
+          'Fn::ImportValue': 
+            !Sub '${VPCStack}-PrivateSubnetInstanceSG'
+        AmiId: !FindInMap [ServerMap, tomcat, ami]
+        ElbPort: !FindInMap [ServerMap, tomcat, elbPort]
+        Ec2Port: !FindInMap [ServerMap, tomcat, ec2Port]        
+        Ec2Role: !Ref S3InstanceProfile
+        Ec2Type: !FindInMap [ServerMap, tomcat, type]
+        Ec2Name: !FindInMap [ServerMap, tomcat, name]
+        Ec2Owner: !FindInMap [ServerMap, tomcat, owner]
+        Ec2Desc: !FindInMap [ServerMap, tomcat, description]        
+        ElbTier: !FindInMap [ServerMap, tomcat, elbTier]  
+        Scaling: !FindInMap [ServerMap, tomcat, scaling]  
+        SvcCode: !FindInMap [ServerMap, tomcat, svcCode]  
+        ElbDnsKVPs: " " # Only needed for public web proxy tier
+        VpcId: 
+          'Fn::ImportValue': 
+            !Sub '${VPCStack}-VPCID'
+Outputs:
+  WebProxyURL:
+    Description: Web Proxy URL
+    Value: !Join ['', ['http://', !GetAtt [WebProxy, Outputs.ElbDnsName]]]
+  WebProxyDNS:
+    Description: Web Proxy URL
+    Value: !GetAtt [WebProxy, Outputs.ElbDnsName]
+    Export:
+      Name: !Sub "${AWS::StackName}-WebProxyDNS"

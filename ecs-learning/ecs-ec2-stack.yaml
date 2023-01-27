@@ -1,0 +1,97 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Create ECS cluster"
+
+Parameters:
+
+  AmiId:
+    Type: String
+    Description: "Amazon Machine Image ID"
+  
+  ClusterName:
+    Type: String
+    Description: "Rothsmith ECS Cluster for learning"
+
+  DevOpsBucket:
+    Type: String
+    Default: rothsmith-cloudformation
+    Description: "The S3 bucket containing CloudFormation templates"
+
+  InstanceType:
+    Type: String
+    Description: The EC2 instance type
+    Default: "t2.micro"
+
+  EC2KeyPair: 
+    Type: String
+    Description: "Provides the name of the Amazon EC2 key pair"
+    Default: "RothsmithKeyPair"
+
+  Owner:
+    Type: String
+    Description: "Owner/Progenitor of the stack"
+    Default: "drothauser"   
+
+  PrivateSGs:
+    Type: String
+    Description: "Security Groups for ECS instances"
+
+  PrivateSubnets:
+    Type: String
+    Description: "Subnets from which to launch the ECS instances from"
+
+  Project:
+    Type: String
+    Description: "Project name"
+    Default: "Presidents"   
+
+  PublicSGs:
+    Type: String
+    Description: "Security Groups for ECS instances"
+
+  PublicSubnets:
+    Type: String
+    Description: "Subnets from which to launch the ECS instances from"
+
+  Scaling:
+    Type: String
+    Description: "Comma separted list of ASG dimensions: min, max, desired"
+    Default: "1,2,1"
+
+  VpcId:
+    Type: String
+    Description: "The vpc to launch the service"
+    Default: vpc-ID
+
+Resources:
+  ECSClusterEc2:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/',!Ref DevOpsBucket,'/ecs-learning/ecs-ec2-cluster.yaml']]
+      Parameters:
+        AmiId: !Ref AmiId
+        ClusterName: !Ref ClusterName
+        DevOpsBucket: !Ref DevOpsBucket
+        InstanceType: !Ref InstanceType
+        EC2KeyPair: !Ref EC2KeyPair
+        Owner: !Ref Owner
+        Project: !Ref Project
+        PrivateSubnets: !Ref PrivateSubnets
+        PublicSubnets: !Ref PublicSubnets
+        PrivateSGs: !Ref PrivateSGs
+        PublicSGs: !Ref PublicSGs
+        RootStack: !Ref 'AWS::StackName'
+        Scaling: !Ref Scaling
+        VpcId: !Ref VpcId
+
+  ECSTask:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/',!Ref DevOpsBucket,'/ecs-learning/ecs-ec2-task.yaml']]
+      Parameters:
+        ContainerImage: !Sub "${AWS::AccountId}.dkr.ecr.us-east-1.amazonaws.com/presidents"
+        ClusterArn: !GetAtt [ECSClusterEc2, Outputs.ECSCluster]
+        ExecutionRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/DevOps"
+        Owner: !Ref Owner
+        SecurityGroups: !Ref PrivateSGs
+        Subnets: !Ref PrivateSubnets
+        TargetGroupArn:  !GetAtt [ECSClusterEc2, Outputs.TargetGroup]

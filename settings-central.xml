@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+        <pluginGroups></pluginGroups>
+
+        <servers>
+                <server>
+                        <id>snapshots</id>
+                        <username>deployment</username>
+                        <password>admin123</password>
+                </server>
+
+                <server>
+                        <id>releases</id>
+                        <username>deployment</username>
+                        <password>admin123</password>
+                </server>
+                <server>
+                        <id>thirdparty</id>
+                        <username>deployment</username>
+                        <password>admin123</password>
+                </server>
+                <server>
+                        <id>mixed</id>
+                        <username>deployment</username>
+                        <password>admin123</password>
+                </server>
+                <server>
+                        <id>site.deployments</id>
+                        <username>deployment</username>
+                        <password>admin123</password>
+                </server>
+                <server>
+                        <id>site</id>
+                        <username>deployment</username>
+                        <password>admin123</password>
+                </server>
+        </servers>
+
+  <mirrors>
+    <mirror>
+      <!--This sends everything else to /public -->
+      <id>nexus</id>
+      <mirrorOf>*</mirrorOf>
+		<url>http://nexus.rothsmith.net/repository/rothsmith-public/</url>
+    </mirror>
+	<mirror>
+      <!--This sends everything else to /public -->
+      <id>central</id>
+      <mirrorOf>*</mirrorOf>
+		<url>http://repo.maven.apache.org/maven2/</url>
+    </mirror>
+  </mirrors>
+  <profiles>
+    <profile>
+      <id>nexus</id>
+      <!--Enable snapshots for the built in central repo to direct -->
+      <!--all requests to nexus via the mirror -->
+      <repositories>
+        <repository>
+          <id>central</id>
+          <url>http://central</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>true</enabled></snapshots>
+        </repository>
+      </repositories>
+     <pluginRepositories>
+        <pluginRepository>
+          <id>central</id>
+          <url>http://central</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>true</enabled></snapshots>
+        </pluginRepository>
+      </pluginRepositories>
+    </profile>
+	<profile>
+      <id>central</id>
+      <!--Enable snapshots for the built in central repo to direct -->
+      <!--all requests to nexus via the mirror -->
+      <repositories>
+        <repository>
+          <id>central</id>
+          <url>http://central</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>true</enabled></snapshots>
+        </repository>
+      </repositories>
+     <pluginRepositories>
+        <pluginRepository>
+          <id>central</id>
+          <url>http://central</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>true</enabled></snapshots>
+        </pluginRepository>
+      </pluginRepositories>
+    </profile>
+  </profiles>
+  <activeProfiles>
+    <!--make the profile active all the time -->
+    <activeProfile>nexus</activeProfile>
+  </activeProfiles>
+</settings>

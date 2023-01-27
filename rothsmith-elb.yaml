@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: NCCT Server Load Balancer
+Description: Rothsmith Load Balancer
 Parameters:  
   ElbSNs:
     Type: 'List<AWS::EC2::Subnet::Id>'

@@ -1,0 +1,177 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Create Application Load Balancer to front ECS cluster"
+
+Parameters:
+
+  Owner:
+    Type: String
+    Description: "Owner/Progenitor of the stack"
+    Default: "drothauser"   
+
+  Project:
+    Type: String
+    Description: "Project name"
+    Default: "Presidents"   
+
+  PublicSGs:
+    Type: String
+    Description: "Security Groups for ECS instances"
+
+  PublicSubnets:
+    Type: String
+    Description: "Subnets from which to launch the ECS instances from"
+
+  RootStack:
+    Type: String
+    Description: "My root (parent) stack"   
+
+  VpcId:
+    Type: String
+    Description: "The vpc to launch the service"        
+
+Resources:
+
+  ApplicationLoadBalancer:
+    Type: "AWS::ElasticLoadBalancingV2::LoadBalancer"
+    Properties:
+        Name: !Sub "${Project}-alb"
+        Scheme: "internet-facing"
+        Type: "application"
+        Subnets: !Split [',', !Ref PublicSubnets]
+        SecurityGroups: !Split [',', !Ref PublicSGs]
+        IpAddressType: "ipv4"
+        LoadBalancerAttributes: 
+          #- 
+          #  Key: "access_logs.s3.enabled"
+          #  Value: "true"
+          #-
+          #  Key: "access_logs.s3.bucket"
+          #  Value: "rothsmith-mys3bucket"
+          - 
+            Key: "idle_timeout.timeout_seconds"
+            Value: "60"
+          - 
+            Key: "deletion_protection.enabled"
+            Value: "false"
+          - 
+            Key: "routing.http2.enabled"
+            Value: "true"
+          - 
+            Key: "routing.http.drop_invalid_header_fields.enabled"
+            Value: "false"
+        Tags: 
+          - 
+            Key: "Project"
+            Value: !Ref Project
+          - 
+            Key: "createdBy"
+            Value: !Ref Owner
+          - 
+            Key: "Environment"
+            Value: "dev"
+          - 
+            Key: "Name"
+            Value: !Join ['', [!Ref Project, "Application-Load-Balancer"]]
+
+  HTTPSListener:
+    Type: "AWS::ElasticLoadBalancingV2::Listener"
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 443
+      Protocol: "HTTPS"
+      SslPolicy: "ELBSecurityPolicy-2016-08"
+      Certificates: 
+        - CertificateArn: "arn:aws:acm:us-east-1:128157188766:certificate/eb6ccead-e6a4-4486-8e0f-697903170cd8"                          
+      DefaultActions: 
+        - 
+          Order: 1
+          TargetGroupArn: !Ref ALBTargetGroup
+          Type: "forward"
+
+  HTTPListener:
+    Type: "AWS::ElasticLoadBalancingV2::Listener"
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: "HTTP"
+      DefaultActions: 
+        - 
+          Order: 1
+          RedirectConfig: 
+              Protocol: "HTTPS"
+              Port: "443"
+              Host: "#{host}"
+              Path: "/#{path}"
+              Query: "#{query}"
+              StatusCode: "HTTP_301"
+          Type: "redirect"
+                
+  ALBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: "/"
+      Port: 8080
+      Protocol: "HTTP"
+      HealthCheckPort: "traffic-port"
+      HealthCheckProtocol: "HTTP"
+      HealthCheckTimeoutSeconds: 5
+      UnhealthyThresholdCount: 2
+      TargetType: "ip"
+      Matcher: 
+          HttpCode: "200"
+      HealthyThresholdCount: 5
+      VpcId: !Ref VpcId
+      Name: "target-group-1"
+      HealthCheckEnabled: true
+      TargetGroupAttributes: 
+        - 
+          Key: "stickiness.enabled"
+          Value: "false"
+        - 
+          Key: "deregistration_delay.timeout_seconds"
+          Value: "300"
+        - 
+          Key: "stickiness.type"
+          Value: "lb_cookie"
+        - 
+          Key: "stickiness.lb_cookie.duration_seconds"
+          Value: "86400"
+        - 
+          Key: "slow_start.duration_seconds"
+          Value: "0"
+        - 
+          Key: "load_balancing.algorithm.type"
+          Value: "round_robin"
+               
+  ALBListenerRule:
+    Type: "AWS::ElasticLoadBalancingV2::ListenerRule"
+    Properties:
+      Priority: "1"
+      ListenerArn: !Ref HTTPSListener
+      Conditions: 
+        - 
+          Field: "host-header"
+          Values: 
+            - "presidents.rothsmith.net"
+      Actions: 
+        - 
+          Type: "forward"
+          TargetGroupArn: !Ref ALBTargetGroup
+          Order: 1
+          ForwardConfig: 
+            TargetGroups: 
+              - 
+                TargetGroupArn: !Ref ALBTargetGroup
+                Weight: 1
+            TargetGroupStickinessConfig: 
+                Enabled: false     
+
+Outputs:
+  ALB:
+      Description: The created loadbalancer
+      Value: !Ref ApplicationLoadBalancer
+
+  TargetGroup:
+      Description: The created TargetGroup 
+      Value: !Ref ALBTargetGroup

@@ -1,0 +1,20 @@
+Host bastion
+   HostName 52.91.187.190
+   User ec2-user
+   IdentityFile ~/.ssh/RothsmithKeyPair.pem
+   ProxyCommand none
+Host nexus
+   HostName 10.10.40.104
+   User ec2-user 
+   IdentityFile ~/.ssh/RothsmithKeyPair.pem
+   ProxyCommand ssh bastion -W %h:%p
+Host jenkins
+   HostName 10.10.40.144
+   User ec2-user 
+   IdentityFile ~/.ssh/RothsmithKeyPair.pem
+   ProxyCommand ssh bastion -W %h:%p
+Host tomcat
+   HostName 10.10.30.163
+   User ec2-user 
+   IdentityFile ~/.ssh/RothsmithKeyPair.pem
+   ProxyCommand ssh bastion -W %h:%p

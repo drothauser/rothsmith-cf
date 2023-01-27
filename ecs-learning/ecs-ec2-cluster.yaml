@@ -1,0 +1,341 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Create ECS cluster"
+
+Parameters:
+
+  AmiId:
+    Type: String
+    Description: "Amazon Machine Image ID"
+  
+  ClusterName:
+    Type: String
+    Description: "Rothsmith ECS Cluster for learning"
+
+  DevOpsBucket:
+    Type: String
+    Default: rothsmith-cloudformation
+    Description: "The S3 bucket containing CloudFormation templates"
+
+  InstanceType:
+    Type: String
+    Description: The EC2 instance type
+    Default: "t2.micro"
+
+  EC2KeyPair: 
+    Type: String
+    Description: "Provides the name of the Amazon EC2 key pair"
+    Default: "RothsmithKeyPair"
+
+  Owner:
+    Type: String
+    Description: "Owner/Progenitor of the stack"
+    Default: "drothauser"   
+
+  PrivateSGs:
+    Type: String
+    Description: "Security Groups for ECS instances"
+
+  PrivateSubnets:
+    Type: String
+    Description: "Subnets from which to launch the ECS instances from"
+
+  Project:
+    Type: String
+    Description: "Project name"
+    Default: "Presidents"   
+
+  PublicSGs:
+    Type: String
+    Description: "Security Groups for ECS instances"
+
+  PublicSubnets:
+    Type: String
+    Description: "Subnets from which to launch the ECS instances from"
+
+  RootStack:
+    Type: String
+    Description: "My root (parent) stack"       
+
+  Scaling:
+    Type: CommaDelimitedList
+    Description: "Comma separted list of ASG dimensions: min, max, desired"
+    Default: "1,2,1"
+
+  VpcId:
+    Type: String
+    Description: "The vpc to launch the service"
+    Default: vpc-ID
+
+Resources:
+  ECSTaskRole:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/',!Ref DevOpsBucket,'/ecs-learning/ecsTaskRole.yaml']]
+      Parameters:
+        Owner: !Ref Owner
+        Project: !Ref Project
+        RootStack: !Ref RootStack
+  # ECSTask:
+  #   Type: AWS::CloudFormation::Stack
+  #   Properties:
+  #     TemplateURL: !Join ['', ['https://s3.amazonaws.com/',!Ref DevOpsBucket,'/ecs-learning/ecs-task.yaml']]
+  #     Parameters:
+  #       Owner: !Ref Owner
+  #       RootStack: "${AWS::StackName}"
+  IAMInstanceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      Description: The ECS Instance Role
+      RoleName: ecsInstanceRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+      Tags: 
+        - 
+          Key: "Environment"
+          Value: "dev"
+        - 
+          Key: "createdBy"
+          Value: !Ref Owner
+        - 
+          Key: "Name"
+          Value: "ecsInstanceRole"
+
+  IAMInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties: 
+        InstanceProfileName: ecsInstanceRole
+        Roles: 
+          - !Ref IAMInstanceRole
+
+  ApplicationLoadBalancer:
+    Type: "AWS::ElasticLoadBalancingV2::LoadBalancer"
+    Properties:
+        Name: !Sub "${Project}-alb"
+        Scheme: "internet-facing"
+        Type: "application"
+        Subnets: !Split [',', !Ref PublicSubnets]
+        SecurityGroups: !Split [',', !Ref PublicSGs]
+        IpAddressType: "ipv4"
+        LoadBalancerAttributes: 
+          #- 
+          #  Key: "access_logs.s3.enabled"
+          #  Value: "true"
+          #-
+          #  Key: "access_logs.s3.bucket"
+          #  Value: "rothsmith-mys3bucket"
+          - 
+            Key: "idle_timeout.timeout_seconds"
+            Value: "60"
+          - 
+            Key: "deletion_protection.enabled"
+            Value: "false"
+          - 
+            Key: "routing.http2.enabled"
+            Value: "true"
+          - 
+            Key: "routing.http.drop_invalid_header_fields.enabled"
+            Value: "false"
+        Tags: 
+          - 
+            Key: "Project"
+            Value: !Ref Project
+          - 
+            Key: "createdBy"
+            Value: !Ref Owner
+          - 
+            Key: "Environment"
+            Value: "dev"
+          - 
+            Key: "Name"
+            Value: !Join ['', [!Ref Project, "Application-Load-Balancer"]]
+
+  HTTPSListener:
+    Type: "AWS::ElasticLoadBalancingV2::Listener"
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 443
+      Protocol: "HTTPS"
+      SslPolicy: "ELBSecurityPolicy-2016-08"
+      Certificates: 
+        - CertificateArn: "arn:aws:acm:us-east-1:128157188766:certificate/eb6ccead-e6a4-4486-8e0f-697903170cd8"                          
+      DefaultActions: 
+        - 
+          Order: 1
+          TargetGroupArn: !Ref ALBTargetGroup
+          Type: "forward"
+
+  HTTPListener:
+    Type: "AWS::ElasticLoadBalancingV2::Listener"
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: "HTTP"
+      DefaultActions: 
+        - 
+          Order: 1
+          RedirectConfig: 
+              Protocol: "HTTPS"
+              Port: "443"
+              Host: "#{host}"
+              Path: "/#{path}"
+              Query: "#{query}"
+              StatusCode: "HTTP_301"
+          Type: "redirect"
+                
+  ALBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: "/"
+      Port: 8080
+      Protocol: "HTTP"
+      HealthCheckPort: "traffic-port"
+      HealthCheckProtocol: "HTTP"
+      HealthCheckTimeoutSeconds: 5
+      UnhealthyThresholdCount: 2
+      TargetType: "ip"
+      Matcher: 
+          HttpCode: "200"
+      HealthyThresholdCount: 5
+      VpcId: !Ref VpcId
+      Name: "target-group-1"
+      HealthCheckEnabled: true
+      TargetGroupAttributes: 
+        - 
+          Key: "stickiness.enabled"
+          Value: "false"
+        - 
+          Key: "deregistration_delay.timeout_seconds"
+          Value: "300"
+        - 
+          Key: "stickiness.type"
+          Value: "lb_cookie"
+        - 
+          Key: "stickiness.lb_cookie.duration_seconds"
+          Value: "86400"
+        - 
+          Key: "slow_start.duration_seconds"
+          Value: "0"
+        - 
+          Key: "load_balancing.algorithm.type"
+          Value: "round_robin"
+               
+  ALBListenerRule:
+    Type: "AWS::ElasticLoadBalancingV2::ListenerRule"
+    Properties:
+      Priority: "1"
+      ListenerArn: !Ref HTTPSListener
+      Conditions: 
+        - 
+          Field: "host-header"
+          Values: 
+            - "presidents.rothsmith.net"
+      Actions: 
+        - 
+          Type: "forward"
+          TargetGroupArn: !Ref ALBTargetGroup
+          Order: 1
+          ForwardConfig: 
+            TargetGroups: 
+              - 
+                TargetGroupArn: !Ref ALBTargetGroup
+                Weight: 1
+            TargetGroupStickinessConfig: 
+                Enabled: false     
+
+  ECSClusterEC2:    
+    Type: 'AWS::ECS::Cluster'
+    Properties:
+      ClusterName: !Ref ClusterName
+      ClusterSettings:
+        - Name: containerInsights
+          Value: enabled
+      Tags: 
+        - 
+          Key: "Name"
+          Value: !Ref ClusterName
+        - 
+          Key: "CreatedBy"
+          Value: !Ref Owner
+        - 
+          Key: "Environment"
+          Value: "dev"
+
+  ECSAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier: !Split [',', !Ref PrivateSubnets]
+      LaunchConfigurationName: !Ref LaunchConfiguration
+      MinSize: !Select ['0', !Ref Scaling]
+      MaxSize: !Select ['1', !Ref Scaling]
+      DesiredCapacity: !Select ['2', !Ref Scaling]
+      HealthCheckGracePeriod: 300
+      #TargetGroupARNs: 
+      #  - !Ref ALBTargetGroup
+      Tags: 
+        - 
+          Key: "Name"
+          Value: !Sub ${ClusterName}-ASG
+          PropagateAtLaunch: true
+        - 
+          Key: "CreatedBy"
+          Value: !Ref Owner
+          PropagateAtLaunch: true
+        - 
+          Key: "Environment"
+          Value: "dev"
+          PropagateAtLaunch: true
+
+  LaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      ImageId: !Ref AmiId
+      SecurityGroups: !Split [',', !Ref PrivateSGs]
+      InstanceType: !Ref InstanceType
+      #IamInstanceProfile: !Ref IAMInstanceProfile
+      IamInstanceProfile: DevOps
+      KeyName: !Ref EC2KeyPair
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          echo ECS_CLUSTER=${ClusterName} >> /etc/ecs/ecs.config;echo ECS_BACKEND_HOST= >> /etc/ecs/ecs.config;
+      BlockDeviceMappings: 
+      - 
+        DeviceName: "/dev/xvda"
+        Ebs: 
+          Encrypted: false
+          VolumeSize: 40
+          VolumeType: "gp2"
+          DeleteOnTermination: true          
+          
+Outputs:
+  IAMProfile:
+    Description: "The created EC2 Instance Role"
+    Value: !Ref IAMInstanceProfile
+
+  AutoScalingGroup:
+    Description: "The ECS Autoscaling Group"
+    Value: !Ref ECSAutoScalingGroup    
+
+  ECSCluster:
+    Description: "The created ECS Cluster"
+    Value: !Ref ECSClusterEC2
+
+  ALB:
+      Description: The created loadbalancer
+      Value: !Ref ApplicationLoadBalancer
+
+  TargetGroup:
+      Description: The created TargetGroup 
+      Value: !Ref ALBTargetGroup
