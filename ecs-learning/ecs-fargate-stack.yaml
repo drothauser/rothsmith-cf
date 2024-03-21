@@ -2,11 +2,7 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: "Create ECS cluster"
 
 Parameters:
-
-  AmiId:
-    Type: String
-    Description: "Amazon Machine Image ID"
-  
+ 
   ClusterName:
     Type: String
     Description: "Rothsmith ECS Cluster for learning"
