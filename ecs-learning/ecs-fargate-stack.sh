@@ -1,7 +1,5 @@
 #!/bin/bash
 
-#AmiId="ami-00a35b04ab99b549a"
-AmiId="ami-08a29dcf20b8fea61"
 EC2KeyPair="RothsmithKeyPair"
 Scaling="1,2,1"
 vpcTag="ROTHSMITH-VPC"
@@ -41,7 +39,6 @@ echo -e "\n*********************************************************************
 *   templateUri=${templateUri}
 *
 * Template Parameters:
-*   AmiId=${AmiId}
 *   EC2KeyPair=${EC2KeyPair}
 *   InstanceType=${InstanceType}
 *   ClusterName=${ClusterName}
@@ -67,8 +64,7 @@ if aws cloudformation create-stack\
  --disable-rollback \
  --stack-name $stackName \
  --template-body ${templateUri}\
- --parameters\
-    ParameterKey=AmiId,ParameterValue=\"${AmiId}\" \
+ --parameters\    
     ParameterKey=InstanceType,ParameterValue=\"${InstanceType}\" \
     ParameterKey=ClusterName,ParameterValue=\"${ClusterName}\" \
     ParameterKey=Owner,ParameterValue=\"${Owner}\" \
